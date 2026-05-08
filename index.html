@@ -1300,7 +1300,7 @@
         let chart3d = null;
         async function init3DMap() {
             try {
-                const url = 'https://geo.datav.aliyun.com/areas_v3/bound/150000_full.json';
+                const url = './inner_mongolia.geojson';
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error('GeoJSON HTTP ' + resp.status);
                 const geoJson = await resp.json();
@@ -1433,7 +1433,7 @@
         async function initNDVI() {
             try {
                 if (!echarts.getMap('innerMongolia')) {
-                    const url = 'https://geo.datav.aliyun.com/areas_v3/bound/150000_full.json';
+                    const url = './inner_mongolia.geojson';
                     const resp = await fetch(url);
                     const geoJson = await resp.json();
                     echarts.registerMap('innerMongolia', geoJson);
