@@ -5,7 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北疆绿盾 - 内蒙古草原生态实时感知与共治平台</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+    <script>
+    // 动态加载 echarts-gl，多 CDN 自动降级，解决部分地区 jsdelivr 访问慢的问题
+    window.__echartsGLReady = new Promise(function(resolve) {
+        // 检查是否已加载（比如从缓存）
+        try {
+            var testChart = echarts.init(document.createElement('div'));
+            testChart.setOption({ series: [{ type: 'map3D', map: '' }] });
+            testChart.dispose();
+            resolve(); // echarts-gl 已可用
+            return;
+        } catch(e) { /* 需要加载 */ }
+
+        var urls = [
+            'https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js',
+            'https://unpkg.com/echarts-gl@2.0.9/dist/echarts-gl.min.js'
+        ];
+        var i = 0;
+        function loadNext() {
+            var s = document.createElement('script');
+            s.src = urls[i++];
+            s.onload = function() {
+                // 验证加载成功
+                setTimeout(resolve, 100);
+            };
+            s.onerror = function() {
+                if (i < urls.length) loadNext();
+                else {
+                    console.warn('echarts-gl 所有 CDN 加载失败');
+                    resolve(); // 仍然 resolve，让页面降级显示
+                }
+            };
+            document.head.appendChild(s);
+        }
+        loadNext();
+    });
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1300,10 +1335,25 @@
         let chart3d = null;
         async function init3DMap() {
             try {
+                // 检查 WebGL 支持
+                try {
+                    var testCanvas = document.createElement('canvas');
+                    var gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+                    if (!gl) {
+                        document.getElementById('map3d-loading').innerHTML =
+                            '⚠ 您的浏览器不支持 WebGL，无法显示 3D 地图<br>' +
+                            '<span style="font-size:12px;color:var(--text-dim)">请使用 Chrome/Firefox/Edge 最新版本</span>';
+                        return;
+                    }
+                } catch(glErr) { /* 跳过 WebGL 检测 */ }
+
                 const url = './inner_mongolia.geojson';
                 const resp = await fetch(url);
-                if (!resp.ok) throw new Error('GeoJSON HTTP ' + resp.status);
+                if (!resp.ok) throw new Error('GeoJSON 文件返回 HTTP ' + resp.status + '（' + resp.statusText + '）');
                 const geoJson = await resp.json();
+                if (!geoJson || !geoJson.features || !geoJson.features.length) {
+                    throw new Error('GeoJSON 文件格式异常（缺少 features 数组）');
+                }
                 echarts.registerMap('innerMongolia', geoJson);
 
                 document.getElementById('map3d-loading').style.display = 'none';
@@ -1312,8 +1362,14 @@
                 window.addEventListener('resize', () => chart3d && chart3d.resize());
             } catch (e) {
                 console.error('3D 地图加载失败:', e);
+                var msg = e.message || String(e);
+                if (msg.includes('fetch') || msg.includes('NetworkError') || msg.includes('HTTP')) {
+                    msg = '网络请求失败，GeoJSON 文件无法获取<br><span style="font-size:12px;color:var(--text-dim)">' + msg + '</span>';
+                } else if (msg.includes('registerMap') || msg.includes('geoJSON')) {
+                    msg = '地图数据注册失败<br><span style="font-size:12px;color:var(--text-dim)">' + msg + '</span>';
+                }
                 document.getElementById('map3d-loading').innerHTML =
-                    '⚠ 地理数据加载失败，请检查网络连接<br><span style="font-size:12px;color:var(--text-dim)">' + e.message + '</span>';
+                    '⚠ ' + msg;
             }
         }
 
@@ -1435,6 +1491,7 @@
                 if (!echarts.getMap('innerMongolia')) {
                     const url = './inner_mongolia.geojson';
                     const resp = await fetch(url);
+                    if (!resp.ok) throw new Error('GeoJSON HTTP ' + resp.status);
                     const geoJson = await resp.json();
                     echarts.registerMap('innerMongolia', geoJson);
                 }
@@ -1843,7 +1900,27 @@
         setInterval(updateRealtimeData, 3000);
 
         // ============ 启动 ============
-        init3DMap();
+
+        // 加载超时看门狗（15秒后如果加载提示还在，显示诊断信息）
+        setTimeout(function() {
+            var loadingEl = document.getElementById('map3d-loading');
+            if (loadingEl && loadingEl.style.display !== 'none' && !loadingEl.innerHTML.includes('失败') && !loadingEl.innerHTML.includes('⚠')) {
+                loadingEl.innerHTML = '⏳ 地图加载较慢，可能原因：<br>' +
+                    '<span style="font-size:12px;color:var(--text-dim)">' +
+                    '① 浏览器缓存了旧页面，请按 Ctrl+F5 强制刷新<br>' +
+                    '② CDN 资源加载慢，正在自动切换备用线路...' +
+                    '</span>';
+            }
+        }, 15000);
+
+        // 等待 echarts-gl 加载完成后初始化 3D 地图
+        window.__echartsGLReady.then(function() {
+            init3DMap();
+        }).catch(function() {
+            // 降级：即使没有 echarts-gl，也尝试加载 2D 地图
+            init3DMap();
+        });
+
         // 预生成几条 alert
         setTimeout(() => { for (let i = 0; i < 4; i++) pushAlert(); }, 500);
     </script>
