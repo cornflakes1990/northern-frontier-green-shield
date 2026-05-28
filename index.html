@@ -6,18 +6,23 @@
     <title>北疆绿盾 - 内蒙古草原生态实时感知与共治平台</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script>
-    // 动态加载 echarts-gl，多 CDN 自动降级，解决部分地区 jsdelivr 访问慢的问题
-    window.__echartsGLReady = new Promise(function(resolve) {
-        // 检查是否已加载（比如从缓存）
+    // 检测 echarts-gl（map3D）是否可用
+    function __isMap3DAvailable() {
         try {
-            var testChart = echarts.init(document.createElement('div'));
-            testChart.setOption({ series: [{ type: 'map3D', map: '' }] });
-            testChart.dispose();
-            resolve(); // echarts-gl 已可用
-            return;
-        } catch(e) { /* 需要加载 */ }
+            var c = echarts.init(document.createElement('div'));
+            c.setOption({ series: [{ type: 'map3D', map: '' }] });
+            c.dispose();
+            return true;
+        } catch(e) { return false; }
+    }
 
+    // 动态加载 echarts-gl，多 CDN 自动降级
+    window.__echartsGLReady = new Promise(function(resolve) {
+        if (__isMap3DAvailable()) { resolve(true); return; }
+
+        // 中国用户优先用 bootcdn（快），再走 jsdelivr / unpkg
         var urls = [
+            'https://cdn.bootcdn.net/ajax/libs/echarts-gl/2.0.9/echarts-gl.min.js',
             'https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js',
             'https://unpkg.com/echarts-gl@2.0.9/dist/echarts-gl.min.js'
         ];
@@ -26,15 +31,11 @@
             var s = document.createElement('script');
             s.src = urls[i++];
             s.onload = function() {
-                // 验证加载成功
-                setTimeout(resolve, 100);
+                setTimeout(function() { resolve(__isMap3DAvailable()); }, 200);
             };
             s.onerror = function() {
                 if (i < urls.length) loadNext();
-                else {
-                    console.warn('echarts-gl 所有 CDN 加载失败');
-                    resolve(); // 仍然 resolve，让页面降级显示
-                }
+                else { resolve(false); }
             };
             document.head.appendChild(s);
         }
@@ -1334,38 +1335,86 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             ['report-location','report-type','report-desc','report-contact'].forEach(id => document.getElementById(id).value = '');
         }
 
-        // ============ 3D 内蒙古地图 ============
+        // ============ 内蒙古地图（3D 优先，自动降级 2D） ============
         let chart3d = null;
-        async function init3DMap() {
-            try {
-                // 检查 WebGL 支持
-                try {
-                    var testCanvas = document.createElement('canvas');
-                    var gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-                    if (!gl) {
-                        document.getElementById('map3d-loading').innerHTML =
-                            '⚠ 您的浏览器不支持 WebGL，无法显示 3D 地图<br>' +
-                            '<span style="font-size:12px;color:var(--text-dim)">请使用 Chrome/Firefox/Edge 最新版本</span>';
-                        return;
+        function renderMap2DFallback() {
+            const data = REGIONS.map(r => ({ name: r.name, value: r.cover }));
+            chart3d.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    formatter: p => {
+                        if (!p.data) return p.name;
+                        const r = REGIONS.find(x => x.name === p.name);
+                        return `<b>${p.name}</b><br/>
+                                覆盖度：<span style="color:#00d084">${p.data.value.toFixed(1)}%</span><br/>
+                                气温：${r ? r.temp.toFixed(1) + '℃' : '-'}<br/>
+                                土壤墒情：${r ? r.soil + '%' : '-'}`;
+                    },
+                    backgroundColor: 'rgba(5,13,26,0.95)',
+                    borderColor: '#00d084',
+                    textStyle: { color: '#fff' }
+                },
+                visualMap: {
+                    min: 30, max: 90,
+                    left: 16, bottom: 16,
+                    text: ['高覆盖', '低覆盖'],
+                    textStyle: { color: '#a0b4c8', fontSize: 11 },
+                    inRange: { color: ['#e74c3c', '#f0a500', '#0aff60'] },
+                    itemWidth: 14, itemHeight: 100
+                },
+                geo: {
+                    map: 'innerMongolia',
+                    roam: true,
+                    zoom: 1.1,
+                    label: {
+                        show: true,
+                        color: '#fff',
+                        fontSize: 10,
+                        formatter: p => p.name.replace('市','').replace('盟','')
+                    },
+                    itemStyle: {
+                        borderColor: 'rgba(0, 224, 255, 0.4)',
+                        borderWidth: 0.8,
+                        areaColor: '#0d1f35'
+                    },
+                    emphasis: {
+                        label: { color: '#0aff60', fontSize: 13, fontWeight: 700 },
+                        itemStyle: { areaColor: '#00d084' }
                     }
-                } catch(glErr) { /* 跳过 WebGL 检测 */ }
+                },
+                series: [{
+                    type: 'map',
+                    geoIndex: 0,
+                    data: data
+                }]
+            });
+            chart3d.off('click');
+            chart3d.on('click', p => {
+                if (p.data && p.name) {
+                    const r = REGIONS.find(x => x.name === p.name);
+                    if (r) showRegionInfo(p.name, r.cover, r.status);
+                }
+            });
+        }
 
+        async function init3DMap(hasMap3D) {
+            try {
                 echarts.registerMap('innerMongolia', INNER_MONGOLIA_GEOJSON);
-
                 document.getElementById('map3d-loading').style.display = 'none';
                 chart3d = echarts.init(document.getElementById('chart-3d-map'));
-                renderMap3D();
+
+                if (hasMap3D) {
+                    renderMap3D();
+                } else {
+                    renderMap2DFallback();
+                }
+
                 window.addEventListener('resize', () => chart3d && chart3d.resize());
             } catch (e) {
-                console.error('3D 地图加载失败:', e);
-                var msg = e.message || String(e);
-                if (msg.includes('fetch') || msg.includes('NetworkError') || msg.includes('HTTP')) {
-                    msg = '网络请求失败，GeoJSON 文件无法获取<br><span style="font-size:12px;color:var(--text-dim)">' + msg + '</span>';
-                } else if (msg.includes('registerMap') || msg.includes('geoJSON')) {
-                    msg = '地图数据注册失败<br><span style="font-size:12px;color:var(--text-dim)">' + msg + '</span>';
-                }
+                console.error('地图初始化失败:', e);
                 document.getElementById('map3d-loading').innerHTML =
-                    '⚠ ' + msg;
+                    '⚠ 地图渲染失败<br><span style="font-size:12px;color:var(--text-dim)">' + (e.message || String(e)) + '</span>';
             }
         }
 
@@ -1906,11 +1955,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         }, 15000);
 
         // 等待 echarts-gl 加载完成后初始化 3D 地图
-        window.__echartsGLReady.then(function() {
-            init3DMap();
-        }).catch(function() {
-            // 降级：即使没有 echarts-gl，也尝试加载 2D 地图
-            init3DMap();
+        window.__echartsGLReady.then(function(hasMap3D) {
+            init3DMap(hasMap3D);
         });
 
         // 预生成几条 alert
