@@ -225,10 +225,11 @@
             height: calc(100vh - 100px);
         }
         .dashboard-left, .dashboard-right { display: flex; flex-direction: column; gap: 12px; }
-        .dashboard-center { display: flex; flex-direction: column; gap: 12px; }
+        .dashboard-center { display: flex; flex-direction: column; gap: 12px; height: 100%; }
 
         .map3d-container {
             flex: 1;
+            min-height: 500px;
             position: relative;
             background: linear-gradient(180deg, rgba(13, 31, 53, 0.6), rgba(5, 13, 26, 0.9));
             border: 1px solid var(--card-border);
@@ -1411,6 +1412,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 }
 
                 window.addEventListener('resize', () => chart3d && chart3d.resize());
+                // 布局完成后强制刷新尺寸
+                setTimeout(() => chart3d && chart3d.resize(), 300);
             } catch (e) {
                 console.error('地图初始化失败:', e);
                 document.getElementById('map3d-loading').innerHTML =
