@@ -1746,6 +1746,19 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 }]
             });
             chart3d.resize();
+
+            // 点击板块弹窗
+            chart3d.off('click');
+            chart3d.on('click', function(p) {
+                if (p.name && !p.data) return; // 点击空白区域
+                var region = REGIONS.find(function(x) { return x.name === p.name; });
+                if (!region) {
+                    // 尝试从 data 中获取
+                    if (p.data && p.data.name) region = REGIONS.find(function(x) { return x.name === p.data.name; });
+                }
+                if (region) showRegionInfo(region.name, region.cover, region.status);
+            });
+
             console.log('[地图] map3D (color) 渲染完成，高度范围:',
                 Math.pow(REGIONS.reduce(function(a,b){return a.cover<b.cover?a:b}).cover/50,2)*30,
                 '~',
