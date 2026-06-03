@@ -232,7 +232,10 @@
             vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #chart-3d-map { width: 100%; height: 100%; }
+        #chart-3d-map {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
 
         .map3d-corner {
             position: absolute;
@@ -1373,24 +1376,41 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         }
 
         async function init3DMap() {
+            console.log('[地图] init3DMap 开始');
             try {
+                console.log('[地图] 注册地图数据...');
                 echarts.registerMap('innerMongolia', INNER_MONGOLIA_GEOJSON);
-                document.getElementById('map3d-loading').style.display = 'none';
-                chart3d = echarts.init(document.getElementById('chart-3d-map'));
+                console.log('[地图] 注册成功');
 
-                if (isMap3DAvailable()) {
+                document.getElementById('map3d-loading').style.display = 'none';
+                var chartEl = document.getElementById('chart-3d-map');
+                console.log('[地图] 容器尺寸:', chartEl.offsetWidth, 'x', chartEl.offsetHeight);
+                chart3d = echarts.init(chartEl);
+                console.log('[地图] ECharts 初始化成功');
+
+                var has3D = isMap3DAvailable();
+                console.log('[地图] map3D 可用:', has3D);
+                if (has3D) {
                     renderMap3D();
+                    console.log('[地图] 3D 渲染完成');
                 } else {
-                    console.warn('map3D 不可用，降级为 2D 地图');
+                    console.warn('[地图] map3D 不可用，降级为 2D');
                     renderMap2DFallback();
+                    console.log('[地图] 2D 渲染完成');
                 }
 
-                window.addEventListener('resize', () => chart3d && chart3d.resize());
-                setTimeout(() => chart3d && chart3d.resize(), 300);
+                window.addEventListener('resize', function() { chart3d && chart3d.resize(); });
+                setTimeout(function() {
+                    console.log('[地图] resize 触发，尺寸:', chart3d ? chart3d.getWidth() + 'x' + chart3d.getHeight() : '无实例');
+                    chart3d && chart3d.resize();
+                }, 300);
             } catch (e) {
-                console.error('地图初始化失败:', e);
-                document.getElementById('map3d-loading').innerHTML =
-                    '⚠ 地图渲染失败<br><span style="font-size:12px;color:var(--text-dim)">' + (e.message || String(e)) + '</span>';
+                console.error('[地图] 初始化失败:', e);
+                var loadingEl = document.getElementById('map3d-loading');
+                if (loadingEl) {
+                    loadingEl.innerHTML =
+                        '⚠ 地图渲染失败<br><span style="font-size:12px;color:var(--text-dim)">' + (e.message || String(e)) + '</span>';
+                }
             }
         }
 
@@ -1930,8 +1950,10 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             }
         }, 15000);
 
-        // 初始化地图（3D 优先，自动降级 2D）
-        init3DMap();
+        // 确保布局完成后再初始化（解决 flex 容器高度计算问题）
+        requestAnimationFrame(function() {
+            init3DMap();
+        });
 
         // 预生成几条 alert
         setTimeout(() => { for (let i = 0; i < 4; i++) pushAlert(); }, 500);
