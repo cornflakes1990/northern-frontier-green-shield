@@ -1965,64 +1965,79 @@ function init3DMap() {
             }
         }
 
-                        function renderMap3D() {
+                                function renderMap3D() {
             if (!chart3d) return;
+
+            // 生成地形点阵（柱体互相重叠形成连续面）
+            function makeTerrain() {
+                var features = INNER_MONGOLIA_GEOJSON.features;
+                var regionMap = {};
+                REGIONS.forEach(function(r) { regionMap[r.name] = r; });
+
+                function inside(lng, lat, ring) {
+                    var inside = false;
+                    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                        if ((ring[i][1] > lat) !== (ring[j][1] > lat) && lng < (ring[j][0]-ring[i][0])*(lat-ring[i][1])/(ring[j][1]-ring[i][1])+ring[i][0]) inside = !inside;
+                    }
+                    return inside;
+                }
+
+                function getColor(v) {
+                    if (v >= 80) return '#1a8a2e';
+                    if (v >= 60) return '#4a9f3e';
+                    if (v >= 45) return '#a8c455';
+                    if (v >= 30) return '#c9a96e';
+                    return '#8b5a3a';
+                }
+
+                var pts = [];
+                var step = 0.085; // ~8km 网格
+
+                for (var fi = 0; fi < features.length; fi++) {
+                    var f = features[fi], name = f.properties.name, region = regionMap[name];
+                    if (!region) continue;
+                    var ring = f.geometry.coordinates[0][0];
+                    var ml=180,xl=-180,mlat=90,xlat=-90;
+                    for (var ri = 0; ri < ring.length; ri++) {
+                        if (ring[ri][0] < ml) ml = ring[ri][0]; if (ring[ri][0] > xl) xl = ring[ri][0];
+                        if (ring[ri][1] < mlat) mlat = ring[ri][1]; if (ring[ri][1] > xlat) xlat = ring[ri][1];
+                    }
+                    var cover = region.cover, color = getColor(cover);
+
+                    for (var x = ml; x <= xl; x += step) {
+                        for (var y = mlat; y <= xlat; y += step) {
+                            if (!inside(x, y, ring)) continue;
+                            // 地形噪声：多频叠加产生自然起伏
+                            var noise = Math.sin(x*3.5)*Math.cos(y*2.5)*2.5 + Math.sin(x*6+y*4.5)*1.5 + Math.cos(x*1.5-y*2.0+fi)*0.8;
+                            var baseH = (cover/100)*(cover/100)*35;
+                            var z = Math.max(0.2, baseH + noise);
+                            pts.push({ value: [x, y, z], itemStyle: { color: color, opacity: 1 } });
+                        }
+                    }
+                }
+                return pts;
+            }
+
+            console.log('[地图] 生成地形...');
+            var t0 = Date.now();
+            var pts = makeTerrain();
+            console.log('[地图] 点数:', pts.length, '生成:', Date.now()-t0, 'ms');
+
+            if (pts.length === 0) return;
 
             chart3d.setOption({
                 backgroundColor: 'transparent',
-                visualMap: {
-                    show: true,
-                    min: 15, max: 90,
-                    left: 20,
-                    bottom: 50,
-                    text: ['茂盛', '枯黄'],
-                    textGap: 24,
-                    textStyle: {
-                        color: '#4a6a8a',
-                        fontSize: 11,
-                        fontWeight: 'bold'
-                    },
-                    inRange: {
-                        color: ['#3a1510', '#6a2a1a', '#a86840', '#c9a96e', '#a8c455', '#7ccd3a', '#4a9f3e', '#1a8a2e', '#0a6e1a', '#045a10']
-                    },
-                    itemWidth: 14,
-                    itemHeight: 130,
-                    borderColor: 'rgba(0,180,100,0.1)',
-                    backgroundColor: 'rgba(255,255,255,0.3)',
-                    borderWidth: 0.5
-                },
-                tooltip: {
-                    trigger: 'item',
-                    formatter: function(p) {
-                        if (!p.data) return p.name;
-                        var r = REGIONS.find(function(x) { return x.name === p.name; });
-                        var h = '<b>' + p.name + '</b><br/>';
-                        h += '草原覆盖度：<span style="color:#00b86b;font-weight:bold">' + p.data.value.toFixed(1) + '%</span><br/>';
-                        if (r) h += '气温：' + r.temp.toFixed(1) + '\u2103 | 土壤墒情：' + r.soil + '% | PM2.5：' + r.pm;
-                        return h;
-                    },
-                    backgroundColor: 'rgba(5,15,30,0.9)',
-                    borderColor: '#00b86b',
-                    borderWidth: 1,
-                    textStyle: { color: '#e0e8f0', fontSize: 12 }
-                },
-                series: [{
-                    type: 'map3D',
+                geo3D: {
                     map: 'innerMongolia',
-                    data: REGIONS.map(function(r) { return { name: r.name, value: r.cover }; }),
+                    shading: 'color',
                     boxWidth: 240,
                     boxDepth: 140,
-                    regionHeight: 2.5,
-                    shading: 'color',
                     groundColor: '#071218',
-                    viewControl: {
-                        alpha: 30, beta: 18, distance: 95,
-                        autoRotate: true, autoRotateSpeed: 3.5,
-                        autoRotateAfterStill: 3,
-                        minAlpha: 5, maxAlpha: 80,
-                        minDistance: 40, maxDistance: 200,
-                        animationDurationUpdate: 300,
-                        animationEasingUpdate: 'cubicOut'
+                    regionHeight: 0,
+                    itemStyle: {
+                        color: '#0a1418',
+                        borderColor: 'rgba(0,200,255,0.05)',
+                        borderWidth: 0.05
                     },
                     label: {
                         show: true,
@@ -2037,37 +2052,35 @@ function init3DMap() {
                         formatter: function(p) { return (p.name||'').replace(/市|盟/g,''); }
                     },
                     emphasis: {
-                        label: {
-                            show: true,
-                            color: '#00ff88',
-                            fontSize: 15,
-                            fontWeight: 'bold',
-                            backgroundColor: 'rgba(3,13,20,0.6)',
-                            borderColor: '#00ff88',
-                            borderWidth: 1.5
-                        },
-                        itemStyle: {
-                            color: '#00ff88',
-                            shadowBlur: 20,
-                            shadowColor: 'rgba(0,255,136,0.3)'
-                        }
+                        label: { color: '#00ff88', fontSize: 15 },
+                        itemStyle: { color: '#0a2840' }
                     },
-                    itemStyle: {
-                        borderColor: 'rgba(0,200,255,0.12)',
-                        borderWidth: 0.4
+                    viewControl: {
+                        alpha: 30, beta: 18, distance: 95,
+                        autoRotate: true, autoRotateSpeed: 3.5,
+                        autoRotateAfterStill: 3,
+                        minAlpha: 5, maxAlpha: 80,
+                        minDistance: 40, maxDistance: 200,
+                        animationDurationUpdate: 300,
+                        animationEasingUpdate: 'cubicOut'
                     },
-                    regions: REGIONS.map(function(r) {
-                        var c = r.cover;
-                        var h;
-                        if (c >= 80) h = 80 + (c - 80) * 1.5;
-                        else if (c >= 60) h = 30 + (c - 60) * 2.5;
-                        else if (c >= 45) h = 14 + (c - 45) * 1.07;
-                        else if (c >= 30) h = 6 + (c - 30) * 0.53;
-                        else h = 3 + c * 0.1;
-                        return { name: r.name, height: h };
-                    })
+                    light: {
+                        main: { intensity: 2, alpha: 35, beta: 30 },
+                        ambient: { intensity: 1.2 }
+                    },
+                    postEffect: { enable: false }
+                },
+                series: [{
+                    type: 'bar3D',
+                    coordinateSystem: 'geo3D',
+                    data: pts,
+                    shading: 'color',
+                    barSize: [0.1, 0.1],
+                    minHeight: 0.1,
+                    itemStyle: { opacity: 0.95 }
                 }]
             });
+
             chart3d.resize();
             chart3d.off('click');
             chart3d.on('click', function(p) {
@@ -2076,18 +2089,35 @@ function init3DMap() {
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
+
             if (window.__mpGlow) clearInterval(window.__mpGlow);
-            window.__mpIdx = 0;
-            window.__mpGlow = setInterval(function() {
-                if (!chart3d) { clearInterval(window.__mpGlow); return; }
-                var idx = window.__mpIdx;
-                var regions = REGIONS.map(function(r, i) {
-                    var isHL = i === idx;
-                    return { name: r.name, itemStyle: { borderColor: isHL ? 'rgba(0,255,150,0.5)' : 'rgba(0,200,255,0.10)', borderWidth: isHL ? 1.5 : 0.4 } };
-                });
-                try { chart3d.setOption({ series: [{ regions: regions }] }); } catch(e) {}
-                window.__mpIdx = (idx + 1) % REGIONS.length;
-            }, 3000);
+            window.__mpGlow = null;
+
+            console.log('[地图] 3D 地形渲染完成');
+        }
+
+        function fallbackMap() {
+            if (!chart3d) return;
+            chart3d.setOption({
+                backgroundColor: 'transparent',
+                visualMap: { show: true, min: 15, max: 90, left: 20, bottom: 50, text: ['茂盛', '枯黄'], textGap: 24, textStyle: { color: '#4a6a8a', fontSize: 11, fontWeight: 'bold' }, inRange: { color: ['#3a1510','#6a2a1a','#a86840','#c9a96e','#a8c455','#7ccd3a','#4a9f3e','#1a8a2e','#0a6e1a','#045a10'] }, itemWidth: 14, itemHeight: 130, borderColor: 'rgba(0,180,100,0.1)' },
+                series: [{
+                    type: 'map3D', map: 'innerMongolia',
+                    data: REGIONS.map(function(r) { return { name: r.name, value: r.cover }; }),
+                    boxWidth: 240, boxDepth: 140, regionHeight: 2.5, shading: 'color', groundColor: '#071218',
+                    viewControl: { alpha: 30, beta: 18, distance: 95, autoRotate: true, autoRotateSpeed: 3.5, minAlpha: 5, maxAlpha: 80 },
+                    label: { show: true, color: '#e8edf5', fontSize: 12, fontWeight: 'bold', backgroundColor: 'rgba(5,13,26,0.45)', padding: [4, 10], borderRadius: 4, formatter: function(p) { return (p.name||'').replace(/市|盟/g,''); } },
+                    emphasis: { label: { color: '#00ff88', fontSize: 15 }, itemStyle: { color: '#00ff88', shadowBlur: 20, shadowColor: 'rgba(0,255,136,0.3)' } },
+                    itemStyle: { borderColor: 'rgba(0,200,255,0.12)', borderWidth: 0.4 },
+                    regions: REGIONS.map(function(r) { var c=r.cover,h; if(c>=80)h=80+(c-80)*1.5; else if(c>=60)h=30+(c-60)*2.5; else if(c>=45)h=14+(c-45)*1.07; else if(c>=30)h=6+(c-30)*0.53; else h=3+c*0.1; return {name:r.name,height:h}; })
+                }]
+            });
+            chart3d.resize();
+            chart3d.off('click');
+            chart3d.on('click', function(p) {
+                var rn = p.name || (p.data && p.data.name);
+                if (!rn) return; var r = REGIONS.find(function(x) { return x.name === rn; }); if (r) showRegionInfo(r.name, r.cover, r.status);
+            });
         }// ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
