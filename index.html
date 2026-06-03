@@ -267,6 +267,7 @@
             to { transform: rotate(360deg); }
         }
         .map3d-container > * { position: relative; z-index: 2; }
+        #chart-3d-map { position: relative; z-index: 2; }
         .map3d-container::after {
             content: '';
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -313,6 +314,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         
         #chart-3d-map { width: 100%; height: 100%; }
+        #map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; opacity: 0.7; }
         #map-minimap {
             position: absolute; bottom: 10px; right: 10px;
             width: 120px; height: 80px;
@@ -1090,6 +1092,7 @@
                             <span class="loading-spinner"></span>正在加载内蒙古地理数据 ...
                         </div>
                         <div id="chart-3d-map"></div>
+                        <canvas id="map-overlay"></canvas>
                     </div>
                     <div class="ticker-bar">
                         <span class="ticker-label">&#128226; 实时动态</span>
@@ -1521,6 +1524,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         // ============ 通用工具 ============
         function showPage(pageId, navEl) {
+            if (animId) { cancelAnimationFrame(animId); animId = null; }
+            if (pageId === "dashboard") { setTimeout(initMapOverlay, 300); }
             document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -1926,7 +1931,126 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         
 
-        function init3DMap() {
+        
+        // ============ 粒子/流光叠加层 ============
+        var mapCtx = null;
+        var particles = [];
+        var flowDots = [];
+        var animId = null;
+
+        function initMapOverlay() {
+            var c = document.getElementById('map-overlay');
+            var box = document.getElementById('chart-3d-map');
+            if (!c || !box) return;
+            c.width = box.offsetWidth || 800;
+            c.height = box.offsetHeight || 600;
+            mapCtx = c.getContext('2d');
+            if (!mapCtx) return;
+
+            // 漂浮粒子
+            particles = [];
+            for (var i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * c.width, y: Math.random() * c.height,
+                    vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+                    r: Math.random() * 2 + 0.3, a: Math.random() * 0.4 + 0.1,
+                    phase: Math.random() * 6.28
+                });
+            }
+
+            // 流动光点
+            flowDots = [];
+            for (var i = 0; i < 15; i++) {
+                flowDots.push({
+                    x: Math.random() * c.width, y: Math.random() * c.height,
+                    tx: Math.random() * c.width, ty: Math.random() * c.height,
+                    p: Math.random(), speed: 0.002 + Math.random() * 0.006,
+                    a: Math.random() * 0.3 + 0.1
+                });
+            }
+
+            if (animId) cancelAnimationFrame(animId);
+            animFrame();
+        }
+
+        function animFrame() {
+            var ctx = mapCtx;
+            var c = document.getElementById('map-overlay');
+            if (!ctx || !c) return;
+            ctx.clearRect(0, 0, c.width, c.height);
+            var t = Date.now() / 1000;
+
+            // 流动光点
+            for (var i = 0; i < flowDots.length; i++) {
+                var d = flowDots[i];
+                d.p += d.speed;
+                if (d.p > 1) { d.p = 0; d.x = d.tx; d.tx = Math.random() * c.width; d.ty = Math.random() * c.height; }
+                var x = d.x + (d.tx - d.x) * d.p;
+                var y = d.y + (d.ty - d.y) * d.p;
+                var a = Math.sin(d.p * 3.14) * d.a;
+                // 光点
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 6.28);
+                ctx.fillStyle = 'rgba(0,210,120,' + a + ')';
+                ctx.fill();
+                // 光晕
+                var g = ctx.createRadialGradient(x, y, 0, x, y, 6);
+                g.addColorStop(0, 'rgba(0,210,120,' + a * 0.3 + ')');
+                g.addColorStop(1, 'rgba(0,210,120,0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(x-6, y-6, 12, 12);
+                // 轨迹尾部
+                for (var j = 1; j <= 8; j++) {
+                    var tp = Math.max(0, d.p - j * 0.02);
+                    var tx = d.x + (d.tx - d.x) * tp;
+                    var ty = d.y + (d.ty - d.y) * tp;
+                    var ta = (1 - j/8) * d.a * 0.3;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 1, 0, 6.28);
+                    ctx.fillStyle = 'rgba(0,180,100,' + ta + ')';
+                    ctx.fill();
+                }
+            }
+
+            // 粒子
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = c.width; if (p.x > c.width) p.x = 0;
+                if (p.y < 0) p.y = c.height; if (p.y > c.height) p.y = 0;
+                var pulse = Math.sin(t * 1.5 + p.phase) * 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, 6.28);
+                ctx.fillStyle = 'rgba(0,220,140,' + p.a * pulse + ')';
+                ctx.fill();
+            }
+
+            // 脉冲波
+            var waveT = t * 0.3 % 1;
+            for (var w = 0; w < 2; w++) {
+                var wt = (waveT + w * 0.5) % 1;
+                var wcx = c.width * (0.2 + wt * 0.6);
+                var wcy = c.height * 0.4;
+                var wr = 15 + wt * 40;
+                var wa = Math.sin(wt * 3.14) * 0.4;
+                ctx.beginPath();
+                ctx.arc(wcx, wcy, wr, 0, 6.28);
+                ctx.strokeStyle = 'rgba(0,200,120,' + wa + ')';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            animId = requestAnimationFrame(animFrame);
+        }
+
+        function resizeMapOverlay() {
+            var c = document.getElementById('map-overlay');
+            var box = document.getElementById('chart-3d-map');
+            if (c && box) { c.width = box.offsetWidth; c.height = box.offsetHeight; }
+        }
+        window.addEventListener('resize', resizeMapOverlay);
+
+function init3DMap() {
             console.log('[地图] init3DMap 开始');
             try {
                 console.log('[地图] 注册地图数据...');
@@ -1944,6 +2068,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 // 初始化 minimap
                 setTimeout(function() {
                     initMinimap();
+                setTimeout(initMapOverlay, 600);
                 }, 500);
 
                 var has3D = true;
