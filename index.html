@@ -218,11 +218,20 @@
             flex: 1;
             min-height: 320px;
             position: relative;
-            background: linear-gradient(180deg, #dce4ed, #c5d0dc);
-            border: 1px solid rgba(0, 184, 107, 0.15);
+            background: radial-gradient(ellipse at 50% 40%, rgba(10, 30, 50, 0.4), #050d1a 80%),
+                        linear-gradient(180deg, #0a1e32, #040b16);
+            border: 1px solid rgba(0, 184, 107, 0.12);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.04) inset;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+        }
+        .map3d-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 184, 107, 0.03), transparent 60%);
+            pointer-events: none;
+            z-index: 1;
         }
         .map3d-title {
             position: absolute;
@@ -241,10 +250,10 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            color: var(--accent-green);
+            color: #00d47a;
             font-size: 14px;
             z-index: 5;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
         .map3d-loading .loading-spinner {
             display: inline-block;
@@ -262,8 +271,8 @@
         #map-minimap {
             position: absolute; bottom: 10px; right: 10px;
             width: 120px; height: 80px;
-            background: rgba(10,26,46,0.7);
-            border: 1px solid rgba(0,230,135,0.15);
+            background: rgba(5, 13, 26, 0.8);
+            border: 1px solid rgba(0, 230, 135, 0.1);
             border-radius: 8px; z-index: 20;
             cursor: grab; overflow: hidden;
         }
@@ -276,12 +285,12 @@
 
         .map3d-corner {
             position: absolute;
-            background: rgba(238, 243, 248, 0.85);
+            background: rgba(5, 13, 26, 0.75);
             padding: 5px 10px;
-            border: 1px solid rgba(0, 184, 107, 0.2);
+            border: 1px solid rgba(0, 184, 107, 0.15);
             border-radius: 6px;
             font-size: 11px;
-            color: #3a5a7a;
+            color: #a0c0d8;
             z-index: 10;
             backdrop-filter: blur(4px);
         }
@@ -300,9 +309,9 @@
         .dot-blue { background: var(--accent-blue); }
 
         .ticker-bar {
-            height: 36px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(0, 184, 107, 0.12);
+            height: 34px;
+            background: rgba(5, 13, 26, 0.6);
+            border: 1px solid rgba(0, 184, 107, 0.1);
             border-radius: 8px;
             display: flex;
             align-items: center;
