@@ -1892,14 +1892,15 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
-        }// ============ NDVI 返青监测 ============
+                }
+
+        // ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
         let ndviInited = false;
         let timelineMonth = 7; // 1-12 (1月到12月)
         let playInterval = null;
 
-        async 
         var ecoMode = 'ndvi';
 
         function switchEcoTab(mode) {
