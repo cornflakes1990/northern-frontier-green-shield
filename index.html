@@ -1375,7 +1375,10 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         function isMap3DAvailable() {
             try {
-                var c = echarts.init(document.createElement('div'));
+                var d = document.createElement('div');
+                d.style.width = '100px';
+                d.style.height = '100px';
+                var c = echarts.init(d);
                 c.setOption({ series: [{ type: 'map3D', map: '' }] });
                 c.dispose();
                 return true;
@@ -1461,12 +1464,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     data: data,
                     boxWidth: 180,
                     boxDepth: 100,
-                    regionHeight: 0.3,
-                    shading: 'realistic',
-                    realisticMaterial: {
-                        roughness: 0.3,
-                        metalness: 0.05
-                    },
+                    regionHeight: 0.2,
+                    shading: 'lambert',
                     groundColor: '#020811',
                     groundLine: {
                         show: true,
@@ -1475,13 +1474,12 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     },
                     light: {
                         main: {
-                            intensity: 2,
+                            intensity: 3,
                             shadow: true,
-                            shadowQuality: 'high',
-                            alpha: 55,
-                            beta: 25
+                            alpha: 60,
+                            beta: 30
                         },
-                        ambient: { intensity: 0.6 }
+                        ambient: { intensity: 1.0 }
                     },
                     postEffect: { enable: false },
                     viewControl: {
@@ -1512,7 +1510,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     // 高度映射 — 形成地形感：健康区域隆起如高原，退化区域低洼
                     regions: REGIONS.map(r => ({
                         name: r.name,
-                        height: r.cover < 50 ? r.cover * 0.3 : r.cover * (1.0 + (r.cover - 50) / 100)
+                        height: Math.pow(r.cover / 50, 1.5) * 12
                     }))
                 }]
             });
