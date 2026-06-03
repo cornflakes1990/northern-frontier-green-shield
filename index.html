@@ -942,7 +942,7 @@
                             <div class="legend-item"><div class="legend-dot dot-red"></div>退化 &lt;50%</div>
                         </div>
                         <div class="map3d-corner corner-br">
-                            <span style="color:var(--text-dim);">柱体高度 = 草原覆盖度</span>
+                            <span style="color:var(--text-dim);font-size:10px;">拖拽旋转 · 右键平移 · 滚轮缩放</span>
                         </div>
                         <div class="map3d-loading" id="map3d-loading">
                             <span class="loading-spinner"></span>正在加载内蒙古地理数据 ...
@@ -1613,7 +1613,9 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                             viewControl: {
                                 alpha: 30, beta: 20, distance: 60,
                                 autoRotate: true, autoRotateSpeed: 5,
-                                autoRotateAfterStill: 1
+                                autoRotateAfterStill: 1,
+                                minAlpha: 5, maxAlpha: 80,
+                                minDistance: 20, maxDistance: 150
                             },
                             light: {
                                 main: { intensity: 1.5, alpha: 40, beta: 30 },
@@ -1654,7 +1656,9 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                                 groundColor: '#020a10',
                                 viewControl: {
                                     alpha: 25, beta: 20, distance: 60,
-                                    autoRotate: true, autoRotateSpeed: 5
+                                    autoRotate: true, autoRotateSpeed: 5,
+                                    minAlpha: 5, maxAlpha: 80,
+                                    minDistance: 20, maxDistance: 150
                                 },
                                 label: { show: false },
                                 emphasis: { label: { show: true, color: '#0aff60' } },
@@ -1865,7 +1869,10 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     groundColor: '#071218',
                     viewControl: {
                         alpha: 30, beta: 20, distance: 100,
-                        autoRotate: true, autoRotateSpeed: 4, autoRotateAfterStill: 3
+                        autoRotate: true, autoRotateSpeed: 4, autoRotateAfterStill: 2,
+                        minAlpha: 5, maxAlpha: 80,
+                        minDistance: 40, maxDistance: 200,
+                        animationDurationUpdate: 300
                     },
                     label: {
                         show: true, color: '#e8edf5', fontSize: 12, fontWeight: 'bold',
@@ -1971,7 +1978,9 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             var factor = WL_MONTH_FACTOR[month - 1];
             return REGIONS.map(function(r) {
                 var base = WILDLIFE_BASE[r.name] || 0.3;
-                var val = base * factor * 0.85 + 0.08 + (Math.random() - 0.5) * 0.03;
+                // 确定性噪声，基于名字和月份计算，避免拖动时数据跳动
+                var noise = ((r.name.charCodeAt(0) + month * 3) % 10 - 5) / 300;
+                var val = base * factor * 0.85 + 0.08 + noise;
                 return { name: r.name, value: Math.min(1.0, Math.max(0.02, val)) };
             });
         }
