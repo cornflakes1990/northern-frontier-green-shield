@@ -1378,10 +1378,13 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var d = document.createElement('div');
                 d.style.width = '100px';
                 d.style.height = '100px';
+                document.body.appendChild(d);
                 var c = echarts.init(d);
                 c.setOption({ series: [{ type: 'map3D', map: '' }] });
+                var ret = true;
                 c.dispose();
-                return true;
+                d.remove();
+                return ret;
             } catch(e) { return false; }
         }
 
@@ -1403,8 +1406,14 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var has3D = isMap3DAvailable();
                 console.log('[地图] map3D 可用:', has3D);
                 if (has3D) {
-                    renderMap3D();
-                    console.log('[地图] 3D 渲染完成');
+                    try {
+                        renderMap3D();
+                        console.log('[地图] 3D 渲染完成');
+                    } catch(e) {
+                        console.warn('[地图] 3D 渲染抛异常:', e.message);
+                        renderMap2DFallback();
+                        console.log('[地图] 降级为 2D');
+                    }
                 } else {
                     console.warn('[地图] map3D 不可用，降级为 2D');
                     renderMap2DFallback();
@@ -1432,96 +1441,99 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         function renderMap3D() {
             if (!chart3d) return;
-            const data = REGIONS.map(r => ({ name: r.name, value: r.cover }));
+            // 直接给每个区域设置颜色（基于覆盖度）
+            function getColor(v) {
+                if (v >= 80) return '#1a7a2e';
+                if (v >= 65) return '#4a9f3e';
+                if (v >= 50) return '#a8c455';
+                if (v >= 40) return '#d4a574';
+                if (v >= 30) return '#b8885a';
+                return '#8b6f47';
+            }
+            var data = REGIONS.map(function(r) {
+                return {
+                    name: r.name,
+                    value: r.cover,
+                    itemStyle: {
+                        color: getColor(r.cover)
+                    }
+                };
+            });
             chart3d.setOption({
-                backgroundColor: 'transparent',
+                backgroundColor: '#0a1628',
                 tooltip: {
                     trigger: 'item',
-                    formatter: p => {
+                    formatter: function(p) {
                         if (!p.data) return p.name;
-                        const r = REGIONS.find(x => x.name === p.name);
-                        return `<b>${p.name}</b><br/>
-                                覆盖度：<span style="color:#00d084">${p.data.value.toFixed(1)}%</span><br/>
-                                气温：${r ? r.temp.toFixed(1) + '℃' : '-'}<br/>
-                                土壤墒情：${r ? r.soil + '%' : '-'}`;
+                        var r = REGIONS.find(function(x) { return x.name === p.name; });
+                        return '<b>' + p.name + '</b><br/>' +
+                            '覆盖度：<span style="color:#00d084">' + p.data.value.toFixed(1) + '%</span><br/>' +
+                            (r ? '气温：' + r.temp.toFixed(1) + '℃<br/>土壤墒情：' + r.soil + '%' : '');
                     },
                     backgroundColor: 'rgba(5,13,26,0.95)',
                     borderColor: '#00d084',
                     textStyle: { color: '#fff' }
                 },
-                visualMap: {
-                    show: false,
-                    min: 30,
-                    max: 90,
-                    inRange: {
-                        color: ['#8b0000', '#e74c3c', '#f0a500', '#7ccd3a', '#0aff60']
-                    }
-                },
                 series: [{
                     type: 'map3D',
                     map: 'innerMongolia',
-                    name: '草原覆盖度',
                     data: data,
-                    boxWidth: 180,
-                    boxDepth: 100,
-                    regionHeight: 0.2,
-                    shading: 'lambert',
-                    groundColor: '#020811',
-                    groundLine: {
-                        show: true,
-                        color: 'rgba(0, 208, 132, 0.15)',
-                        lineWidth: 0.5
-                    },
+                    boxWidth: 200,
+                    boxDepth: 120,
+                    regionHeight: 3,
+                    shading: 'color',
+                    groundColor: '#0a1a0a',
                     light: {
                         main: {
-                            intensity: 3,
-                            shadow: true,
-                            alpha: 60,
-                            beta: 30
+                            intensity: 1,
+                            alpha: 30,
+                            beta: 40
                         },
-                        ambient: { intensity: 1.0 }
+                        ambient: { intensity: 1.5 }
                     },
-                    postEffect: { enable: false },
                     viewControl: {
-                        distance: 90,
-                        alpha: 50,
-                        beta: -15,
-                        minAlpha: 20,
-                        maxAlpha: 80,
+                        alpha: 35,
+                        beta: 30,
+                        distance: 100,
                         autoRotate: true,
-                        autoRotateSpeed: 5,
-                        autoRotateAfterStill: 2,
-                        animationDurationUpdate: 1000
+                        autoRotateSpeed: 5
                     },
                     label: {
-                        show: false
+                        show: true,
+                        color: '#fff',
+                        fontSize: 12,
+                        backgroundColor: 'rgba(0,0,0,0.3)',
+                        padding: [2, 5],
+                        borderRadius: 3,
+                        formatter: function(p) {
+                            return p.name.replace('市','').replace('盟','');
+                        }
                     },
                     emphasis: {
                         label: {
                             show: true,
-                            textStyle: { color: '#0aff60', fontSize: 13, fontWeight: 700 }
+                            color: '#0aff60',
+                            fontSize: 14
                         },
                         itemStyle: { color: '#0aff60' }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.3)',
-                        borderWidth: 0.8
+                        borderColor: 'rgba(0, 224, 255, 0.4)',
+                        borderWidth: 1
                     },
-                    // 高度映射 — 形成地形感：健康区域隆起如高原，退化区域低洼
-                    regions: REGIONS.map(r => ({
-                        name: r.name,
-                        height: Math.pow(r.cover / 50, 1.5) * 12
-                    }))
+                    regions: REGIONS.map(function(r) {
+                        return {
+                            name: r.name,
+                            height: Math.max(0.5, r.cover * 0.3)
+                        };
+                    })
                 }]
             });
-
-            // 强制刷新，解决 echarts-gl "Dom has no width or height" 问题
             chart3d.resize();
-
             chart3d.off('click');
-            chart3d.on('click', p => {
+            chart3d.on('click', function(p) {
                 if (p.data && p.name) {
-                    const r = REGIONS.find(x => x.name === p.name);
+                    var r = REGIONS.find(function(x) { return x.name === p.name; });
                     if (r) showRegionInfo(p.name, r.cover, r.status);
                 }
             });
