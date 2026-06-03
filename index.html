@@ -1934,84 +1934,160 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         
         
         
-        // ============ 地图数据流光 ============
+        
+        // ============ 监测数据射线（定向光束） ============
         var mapCtx = null;
-        var flowLines = [];
+        var rays = [];
         var animId = null;
         var CITY_POS = [
-            {name:'呼和浩特市',x:111.44,y:40.62},{name:'包头市',x:110.34,y:41.18},
-            {name:'乌海市',x:106.86,y:39.52},{name:'赤峰市',x:118.92,y:43.11},
-            {name:'通辽市',x:121.53,y:43.86},{name:'鄂尔多斯市',x:108.93,y:39.51},
-            {name:'呼伦贝尔市',x:121.70,y:48.50},{name:'巴彦淖尔市',x:107.91,y:41.09},
-            {name:'乌兰察布市',x:112.91,y:41.60},{name:'兴安盟',x:121.50,y:46.26},
-            {name:'锡林郭勒盟',x:116.17,y:44.06},{name:'阿拉善盟',x:103.28,y:39.83}
+            {name:"呼和浩特市",x:111.44,y:40.62,role:"center"},{name:"包头市",x:110.34,y:41.18},
+            {name:"乌海市",x:106.86,y:39.52},{name:"赤峰市",x:118.92,y:43.11},
+            {name:"通辽市",x:121.53,y:43.86},{name:"鄂尔多斯市",x:108.93,y:39.51},
+            {name:"呼伦贝尔市",x:121.70,y:48.50},{name:"巴彦淖尔市",x:107.91,y:41.09},
+            {name:"乌兰察布市",x:112.91,y:41.60},{name:"兴安盟",x:121.50,y:46.26},
+            {name:"锡林郭勒盟",x:116.17,y:44.06},{name:"阿拉善盟",x:103.28,y:39.83}
         ];
         function g2c(lng,lat,w,h){return{x:(lng-97)/29*w,y:(53-lat)/16*h};}
 
         function initMapOverlay(){
-            var c=document.getElementById('map-overlay'),box=document.getElementById('chart-3d-map');
+            var c=document.getElementById("map-overlay"),box=document.getElementById("chart-3d-map");
             if(!c||!box)return;
             c.width=box.offsetWidth||800;c.height=box.offsetHeight||600;
-            mapCtx=c.getContext('2d');if(!mapCtx)return;
+            mapCtx=c.getContext("2d");if(!mapCtx)return;
             var w=c.width,h=c.height;
-            flowLines=[];
-            var links=[[0,1],[0,6],[0,7],[0,8],[1,3],[1,6],[1,7],[2,3],[2,5],[2,6],
-                [3,4],[3,6],[3,8],[4,6],[5,6],[5,7],[6,11],[7,8],[8,3],[9,4],[9,6],[10,3],[10,4],[10,6],[11,2],[11,5],[11,6]];
-            var colors=['#00ff88','#00ddff','#66ffcc','#88ffaa','#ffcc44'];
+
+            // 数据流向：各盟市监测站 → 呼和浩特数据中心
+            // 以及生态关联区域间的数据交换
+            var links=[
+                [1,0,"生态治理"],[2,0,"环境监测"],[3,0,"草原监测"],[4,0,"植被数据"],
+                [5,0,"沙化预警"],[6,0,"生物多样性"],[7,0,"水文数据"],[8,0,"气候数据"],
+                [9,0,"牧业数据"],[10,0,"草地监测"],[11,0,"荒漠化数据"],
+                [1,5,"工业影响"],[3,10,"生态廊道"],[4,6,"迁徙通道"],[6,10,"草原生态"],
+                [7,5,"黄河流域"],[6,11,"生态梯度"],[8,3,"监测网络"]
+            ];
+            var colors=["#00ff88","#00ddff","#ff66cc","#ffaa00","#66ff99","#44ddff","#ff8844","#aa66ff"];
+
+            rays=[];
             for(var i=0;i<links.length;i++){
-                var f=CITY_POS[links[i][0]],t=CITY_POS[links[i][1]];
-                var ff=g2c(f.x,f.y,w,h),tt=g2c(t.x,t.y,w,h);
-                flowLines.push({fx:ff.x,fy:ff.y,tx:tt.x,ty:tt.y,p:Math.random(),s:0.002+Math.random()*0.004,c:colors[i%colors.length],a:Math.random()*0.25+0.12});
+                var from=CITY_POS[links[i][0]],to=CITY_POS[links[i][1]];
+                var ff=g2c(from.x,from.y,w,h),tt=g2c(to.x,to.y,w,h);
+                // 稍微弯曲（根据数据偏移）
+                var curve=(tt.x-ff.x)*0.08+(tt.y-ff.y)*0.05;
+                rays.push({
+                    fx:ff.x,fy:ff.y,tx:tt.x,ty:tt.y,
+                    cx:(ff.x+tt.x)/2+(tt.y-ff.y)*0.1,
+                    cy:(ff.y+tt.y)/2-(tt.x-ff.x)*0.1,
+                    label:links[i][2],
+                    p:Math.random(),s:0.003+Math.random()*0.005,
+                    color:colors[i%colors.length],
+                    a:Math.random()*0.3+0.2
+                });
             }
+
             if(animId)cancelAnimationFrame(animId);
             animFrame();
         }
 
         function animFrame(){
-            var ctx=mapCtx,c=document.getElementById('map-overlay');
+            var ctx=mapCtx,c=document.getElementById("map-overlay");
             if(!ctx||!c)return;
             ctx.clearRect(0,0,c.width,c.height);
-            // 静态底层连线
-            for(var i=0;i<flowLines.length;i++){
-                var fl=flowLines[i];
-                var cx=(fl.fx+fl.tx)/2+(fl.ty-fl.fy)*0.12,cy=(fl.fy+fl.ty)/2-(fl.tx-fl.fx)*0.12;
-                ctx.beginPath();ctx.moveTo(fl.fx,fl.fy);
-                ctx.quadraticCurveTo(cx,cy,fl.tx,fl.ty);
-                ctx.strokeStyle=fl.c;ctx.globalAlpha=0.05;ctx.lineWidth=0.8;ctx.stroke();ctx.globalAlpha=1;
-            }
-            // 流动光点
-            for(var i=0;i<flowLines.length;i++){
-                var fl=flowLines[i];fl.p+=fl.s;if(fl.p>1)fl.p=0;
-                var p=fl.p;
-                var cx=(fl.fx+fl.tx)/2+(fl.ty-fl.fy)*0.12,cy=(fl.fy+fl.ty)/2-(fl.tx-fl.fx)*0.12;
-                var u=1-p,px=u*u*fl.fx+2*u*p*cx+p*p*fl.tx,py=u*u*fl.fy+2*u*p*cy+p*p*fl.ty;
-                var b=Math.sin(p*Math.PI);
-                // 光晕
-                var grad=ctx.createRadialGradient(px,py,0,px,py,12);
-                grad.addColorStop(0,fl.c+'88');grad.addColorStop(1,fl.c+'00');
-                ctx.fillStyle=grad;ctx.globalAlpha=b*0.5;
-                ctx.fillRect(px-12,py-12,24,24);
-                // 光点
-                ctx.beginPath();ctx.arc(px,py,2.5,0,6.28);
-                ctx.fillStyle=fl.c;ctx.globalAlpha=b*fl.a*2;
-                ctx.shadowColor=fl.c;ctx.shadowBlur=20;ctx.fill();ctx.shadowBlur=0;
-                // 轨迹尾迹
-                for(var j=1;j<=8;j++){
-                    var tp=Math.max(0,p-j*0.012);if(tp===0)break;
-                    var u2=1-tp,ttx=u2*u2*fl.fx+2*u2*tp*cx+tp*tp*fl.tx,tty=u2*u2*fl.fy+2*u2*tp*cy+tp*tp*fl.ty;
-                    ctx.beginPath();ctx.arc(ttx,tty,1,0,6.28);
-                    ctx.fillStyle=fl.c;ctx.globalAlpha=b*(1-j/8)*0.3;ctx.fill();
+            var t=Date.now()/1000;
+
+            for(var i=0;i<rays.length;i++){
+                var r=rays[i];
+                // 计算光束方向
+                var dx=r.tx-r.fx,dy=r.ty-r.fy;
+                var len=Math.sqrt(dx*dx+dy*dy);
+                var nx=dx/len,ny=dy/len;
+
+                // 1. 画锥形光束（源端粗，末端细）
+                var beamProgress=r.p;
+                var beamWidth=8*(1-beamProgress*0.7); // 源端粗，末端细
+
+                // 在贝塞尔曲线上取两个点形成锥形
+                var u1=1-beamProgress;
+                var bx1=u1*u1*r.fx+2*u1*beamProgress*r.cx+beamProgress*beamProgress*r.tx;
+                var by1=u1*u1*r.fy+2*u1*beamProgress*r.cy+beamProgress*beamProgress*r.ty;
+                var u2=1-Math.min(1,beamProgress+0.05);
+                var beamProgress2=Math.min(1,beamProgress+0.05);
+                var bx2=u2*u2*r.fx+2*u2*beamProgress2*r.cx+beamProgress2*beamProgress2*r.tx;
+                var by2=u2*u2*r.fy+2*u2*beamProgress2*r.cy+beamProgress2*beamProgress2*r.ty;
+
+                // 垂直方向
+                var ndx=-ny,ndy=nx;
+                var beamAlpha=Math.sin(beamProgress*Math.PI)*r.a;
+
+                // 光束主体
+                ctx.beginPath();
+                ctx.moveTo(bx1+ndx*beamWidth,by1+ndy*beamWidth);
+                ctx.lineTo(bx2+ndx*beamWidth*0.3,by2+ndy*beamWidth*0.3);
+                ctx.lineTo(bx2-ndx*beamWidth*0.3,by2-ndy*beamWidth*0.3);
+                ctx.lineTo(bx1-ndx*beamWidth,by1-ndy*beamWidth);
+                ctx.closePath();
+                ctx.fillStyle=r.color;
+                ctx.globalAlpha=beamAlpha*0.25;
+                ctx.shadowColor=r.color;
+                ctx.shadowBlur=15;
+                ctx.fill();
+
+                // 光束核心（更亮的细线）
+                ctx.shadowBlur=0;
+                ctx.beginPath();
+                ctx.moveTo(bx1,by1);
+                ctx.lineTo(bx2,by2);
+                ctx.strokeStyle=r.color;
+                ctx.globalAlpha=beamAlpha*0.6;
+                ctx.lineWidth=2;
+                ctx.shadowColor=r.color;
+                ctx.shadowBlur=10;
+                ctx.stroke();
+
+                // 前端光晕
+                ctx.shadowBlur=0;
+                var grad=ctx.createRadialGradient(bx2,by2,0,bx2,by2,10);
+                grad.addColorStop(0,r.color+"99");
+                grad.addColorStop(1,r.color+"00");
+                ctx.fillStyle=grad;
+                ctx.globalAlpha=beamAlpha*0.8;
+                ctx.fillRect(bx2-10,by2-10,20,20);
+
+                // 前端亮点
+                ctx.beginPath();
+                ctx.arc(bx2,by2,3,0,6.28);
+                ctx.fillStyle=r.color;
+                ctx.globalAlpha=beamAlpha;
+                ctx.shadowColor=r.color;
+                ctx.shadowBlur=20;
+                ctx.fill();
+                ctx.shadowBlur=0;
+
+                // 前进
+                r.p+=r.s;
+                if(r.p>1){
+                    r.p=0;
+                    // 随机重置方向（源和目标互换，表示双向数据交换）
+                    if(Math.random()<0.3){
+                        var tmp={x:r.fx,y:r.fy};
+                        r.fx=r.tx;r.fy=r.ty;r.tx=tmp.x;r.ty=tmp.y;
+                        var tmp2=r.cx;
+                        r.cx=(r.fx+r.tx)/2+(r.ty-r.fy)*0.1;
+                        r.cy=(r.fy+r.ty)/2-(r.tx-r.fx)*0.1;
+                    }
                 }
+
+                ctx.shadowBlur=0;
                 ctx.globalAlpha=1;
             }
+
             animId=requestAnimationFrame(animFrame);
         }
 
         function resizeMapOverlay(){
-            var c=document.getElementById('map-overlay'),box=document.getElementById('chart-3d-map');
+            var c=document.getElementById("map-overlay"),box=document.getElementById("chart-3d-map");
             if(c&&box){c.width=box.offsetWidth;c.height=box.offsetHeight;}
         }
-        window.addEventListener('resize',resizeMapOverlay);
+        window.addEventListener("resize",resizeMapOverlay);
 function init3DMap() {
             console.log('[地图] init3DMap 开始');
             try {
