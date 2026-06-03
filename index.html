@@ -1933,153 +1933,85 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         
         
-        // ============ 流光溢彩 Canvas 叠加层 ============
+        
+        // ============ 地图数据流光 ============
         var mapCtx = null;
-        var glitterPts = [];
-        var ribbons = [];
-        var sparkles = [];
+        var flowLines = [];
         var animId = null;
+        var CITY_POS = [
+            {name:'呼和浩特市',x:111.44,y:40.62},{name:'包头市',x:110.34,y:41.18},
+            {name:'乌海市',x:106.86,y:39.52},{name:'赤峰市',x:118.92,y:43.11},
+            {name:'通辽市',x:121.53,y:43.86},{name:'鄂尔多斯市',x:108.93,y:39.51},
+            {name:'呼伦贝尔市',x:121.70,y:48.50},{name:'巴彦淖尔市',x:107.91,y:41.09},
+            {name:'乌兰察布市',x:112.91,y:41.60},{name:'兴安盟',x:121.50,y:46.26},
+            {name:'锡林郭勒盟',x:116.17,y:44.06},{name:'阿拉善盟',x:103.28,y:39.83}
+        ];
+        function g2c(lng,lat,w,h){return{x:(lng-97)/29*w,y:(53-lat)/16*h};}
 
-        function initMapOverlay() {
-            var c = document.getElementById('map-overlay');
-            var box = document.getElementById('chart-3d-map');
-            if (!c || !box) return;
-            c.width = box.offsetWidth || 800;
-            c.height = box.offsetHeight || 600;
-            mapCtx = c.getContext('2d');
-            if (!mapCtx) return;
-
-            var colors = ['#00ff88','#00ddff','#ff66cc','#ffaa00','#66ff66','#88ddff','#ff8844','#aa66ff'];
-
-            glitterPts = [];
-            for (var i = 0; i < 100; i++) {
-                glitterPts.push({
-                    x: Math.random() * c.width, y: Math.random() * c.height,
-                    vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
-                    r: Math.random() * 3 + 1, a: Math.random() * 0.6 + 0.4,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    phase: Math.random() * 6.28, ps: 1 + Math.random() * 2
-                });
+        function initMapOverlay(){
+            var c=document.getElementById('map-overlay'),box=document.getElementById('chart-3d-map');
+            if(!c||!box)return;
+            c.width=box.offsetWidth||800;c.height=box.offsetHeight||600;
+            mapCtx=c.getContext('2d');if(!mapCtx)return;
+            var w=c.width,h=c.height;
+            flowLines=[];
+            var links=[[0,1],[0,6],[0,7],[0,8],[1,3],[1,6],[1,7],[2,3],[2,5],[2,6],
+                [3,4],[3,6],[3,8],[4,6],[5,6],[5,7],[6,11],[7,8],[8,3],[9,4],[9,6],[10,3],[10,4],[10,6],[11,2],[11,5],[11,6]];
+            var colors=['#00ff88','#00ddff','#66ffcc','#88ffaa','#ffcc44'];
+            for(var i=0;i<links.length;i++){
+                var f=CITY_POS[links[i][0]],t=CITY_POS[links[i][1]];
+                var ff=g2c(f.x,f.y,w,h),tt=g2c(t.x,t.y,w,h);
+                flowLines.push({fx:ff.x,fy:ff.y,tx:tt.x,ty:tt.y,p:Math.random(),s:0.002+Math.random()*0.004,c:colors[i%colors.length],a:Math.random()*0.25+0.12});
             }
-
-            ribbons = [];
-            for (var i = 0; i < 10; i++) {
-                var pts = [];
-                for (var j = 0; j < 6; j++) {
-                    pts.push({ x: Math.random() * c.width, y: Math.random() * c.height, vx: (Math.random()-0.5)*0.2, vy: (Math.random()-0.5)*0.2 });
-                }
-                ribbons.push({ pts: pts, color: colors[i % colors.length], a: Math.random()*0.25+0.1, w: Math.random()*2+0.5 });
-            }
-
-            sparkles = [];
-            for (var i = 0; i < 40; i++) {
-                sparkles.push({ x: Math.random()*c.width, y: Math.random()*c.height, r: Math.random()*2+0.5, phase: Math.random()*6.28, color: colors[Math.floor(Math.random()*colors.length)] });
-            }
-
-            if (animId) cancelAnimationFrame(animId);
+            if(animId)cancelAnimationFrame(animId);
             animFrame();
         }
 
-        function animFrame() {
-            var ctx = mapCtx;
-            var c = document.getElementById('map-overlay');
-            if (!ctx || !c) return;
-            ctx.clearRect(0, 0, c.width, c.height);
-            var t = Date.now() / 1000;
-
-            // 彩色飘带
-            for (var i = 0; i < ribbons.length; i++) {
-                var rib = ribbons[i];
-                for (var j = 0; j < rib.pts.length; j++) {
-                    var p = rib.pts[j]; p.x += p.vx; p.y += p.vy;
-                    if (p.x < -20) p.x = c.width+20; if (p.x > c.width+20) p.x = -20;
-                    if (p.y < -20) p.y = c.height+20; if (p.y > c.height+20) p.y = -20;
+        function animFrame(){
+            var ctx=mapCtx,c=document.getElementById('map-overlay');
+            if(!ctx||!c)return;
+            ctx.clearRect(0,0,c.width,c.height);
+            // 静态底层连线
+            for(var i=0;i<flowLines.length;i++){
+                var fl=flowLines[i];
+                var cx=(fl.fx+fl.tx)/2+(fl.ty-fl.fy)*0.12,cy=(fl.fy+fl.ty)/2-(fl.tx-fl.fx)*0.12;
+                ctx.beginPath();ctx.moveTo(fl.fx,fl.fy);
+                ctx.quadraticCurveTo(cx,cy,fl.tx,fl.ty);
+                ctx.strokeStyle=fl.c;ctx.globalAlpha=0.05;ctx.lineWidth=0.8;ctx.stroke();ctx.globalAlpha=1;
+            }
+            // 流动光点
+            for(var i=0;i<flowLines.length;i++){
+                var fl=flowLines[i];fl.p+=fl.s;if(fl.p>1)fl.p=0;
+                var p=fl.p;
+                var cx=(fl.fx+fl.tx)/2+(fl.ty-fl.fy)*0.12,cy=(fl.fy+fl.ty)/2-(fl.tx-fl.fx)*0.12;
+                var u=1-p,px=u*u*fl.fx+2*u*p*cx+p*p*fl.tx,py=u*u*fl.fy+2*u*p*cy+p*p*fl.ty;
+                var b=Math.sin(p*Math.PI);
+                // 光晕
+                var grad=ctx.createRadialGradient(px,py,0,px,py,12);
+                grad.addColorStop(0,fl.c+'88');grad.addColorStop(1,fl.c+'00');
+                ctx.fillStyle=grad;ctx.globalAlpha=b*0.5;
+                ctx.fillRect(px-12,py-12,24,24);
+                // 光点
+                ctx.beginPath();ctx.arc(px,py,2.5,0,6.28);
+                ctx.fillStyle=fl.c;ctx.globalAlpha=b*fl.a*2;
+                ctx.shadowColor=fl.c;ctx.shadowBlur=20;ctx.fill();ctx.shadowBlur=0;
+                // 轨迹尾迹
+                for(var j=1;j<=8;j++){
+                    var tp=Math.max(0,p-j*0.012);if(tp===0)break;
+                    var u2=1-tp,ttx=u2*u2*fl.fx+2*u2*tp*cx+tp*tp*fl.tx,tty=u2*u2*fl.fy+2*u2*tp*cy+tp*tp*fl.ty;
+                    ctx.beginPath();ctx.arc(ttx,tty,1,0,6.28);
+                    ctx.fillStyle=fl.c;ctx.globalAlpha=b*(1-j/8)*0.3;ctx.fill();
                 }
-                ctx.beginPath();
-                ctx.moveTo(rib.pts[0].x, rib.pts[0].y);
-                for (var j = 1; j < rib.pts.length-1; j++) {
-                    ctx.quadraticCurveTo(rib.pts[j].x, rib.pts[j].y, (rib.pts[j].x+rib.pts[j+1].x)/2, (rib.pts[j].y+rib.pts[j+1].y)/2);
-                }
-                ctx.strokeStyle = rib.color;
-                ctx.globalAlpha = rib.a + Math.sin(t*0.5+i)*0.08;
-                ctx.lineWidth = rib.w;
-                ctx.shadowColor = rib.color;
-                ctx.shadowBlur = 10;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1;
+                ctx.globalAlpha=1;
             }
-
-            // 流光粒子 + 光晕
-            for (var i = 0; i < glitterPts.length; i++) {
-                var p = glitterPts[i];
-                p.x += p.vx; p.y += p.vy;
-                if (p.x < 0) p.x = c.width; if (p.x > c.width) p.x = 0;
-                if (p.y < 0) p.y = c.height; if (p.y > c.height) p.y = 0;
-                var pulse = Math.sin(t * p.ps + p.phase) * 0.4 + 0.6;
-                var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 8);
-                grad.addColorStop(0, p.color + '99');
-                grad.addColorStop(0.4, p.color + '33');
-                grad.addColorStop(1, p.color + '00');
-                ctx.fillStyle = grad;
-                ctx.fillRect(p.x-p.r*8, p.y-p.r*8, p.r*16, p.r*16);
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r * pulse, 0, 6.28);
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.a * pulse;
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur = 15;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1;
-            }
-
-            // 闪烁十字星
-            for (var i = 0; i < sparkles.length; i++) {
-                var s = sparkles[i];
-                var f = Math.sin(t*3+s.phase)*0.5+0.5;
-                ctx.beginPath();
-                ctx.moveTo(s.x-s.r*2*f, s.y); ctx.lineTo(s.x, s.y-s.r*2*f);
-                ctx.lineTo(s.x+s.r*2*f, s.y); ctx.lineTo(s.x, s.y+s.r*2*f);
-                ctx.closePath();
-                ctx.fillStyle = s.color;
-                ctx.globalAlpha = f*0.8;
-                ctx.shadowColor = s.color;
-                ctx.shadowBlur = 12;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1;
-            }
-
-            // 周期性光弧
-            var arcT = (t*0.12) % 1;
-            var arcColors = ['#ff66cc','#00ddff','#ffaa00'];
-            for (var i = 0; i < 3; i++) {
-                var at2 = (arcT + i*0.33) % 1;
-                var ax2 = c.width * at2;
-                var ay2 = c.height*(0.2+Math.sin(at2*6.28+i)*0.2);
-                var aa2 = Math.sin(at2*3.14)*0.3;
-                ctx.beginPath();
-                ctx.arc(ax2, ay2, 25+at2*30, 0, 6.28);
-                ctx.strokeStyle = arcColors[i];
-                ctx.globalAlpha = aa2;
-                ctx.lineWidth = 1.5;
-                ctx.shadowColor = arcColors[i];
-                ctx.shadowBlur = 20;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1;
-            }
-
-            animId = requestAnimationFrame(animFrame);
+            animId=requestAnimationFrame(animFrame);
         }
 
-        function resizeMapOverlay() {
-            var c = document.getElementById('map-overlay');
-            var box = document.getElementById('chart-3d-map');
-            if (c && box) { c.width = box.offsetWidth; c.height = box.offsetHeight; }
+        function resizeMapOverlay(){
+            var c=document.getElementById('map-overlay'),box=document.getElementById('chart-3d-map');
+            if(c&&box){c.width=box.offsetWidth;c.height=box.offsetHeight;}
         }
-        window.addEventListener('resize', resizeMapOverlay);
+        window.addEventListener('resize',resizeMapOverlay);
 function init3DMap() {
             console.log('[地图] init3DMap 开始');
             try {
