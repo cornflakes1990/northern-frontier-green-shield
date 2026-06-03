@@ -232,10 +232,7 @@
             vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #chart-3d-map {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-        }
+        #chart-3d-map { width: 100%; height: 100%; }
 
         .map3d-corner {
             position: absolute;
@@ -1385,7 +1382,11 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 document.getElementById('map3d-loading').style.display = 'none';
                 var chartEl = document.getElementById('chart-3d-map');
                 console.log('[地图] 容器尺寸:', chartEl.offsetWidth, 'x', chartEl.offsetHeight);
-                chart3d = echarts.init(chartEl);
+                // 显式传入宽高，避免 echarts-gl 报 "Dom has no width or height"
+                chart3d = echarts.init(chartEl, null, {
+                    width: chartEl.offsetWidth || 800,
+                    height: chartEl.offsetHeight || 600
+                });
                 console.log('[地图] ECharts 初始化成功');
 
                 var has3D = isMap3DAvailable();
@@ -1503,6 +1504,9 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     }))
                 }]
             });
+
+            // 强制刷新，解决 echarts-gl "Dom has no width or height" 问题
+            chart3d.resize();
 
             chart3d.off('click');
             chart3d.on('click', p => {
