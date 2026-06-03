@@ -1446,42 +1446,44 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     map: 'innerMongolia',
                     name: '草原覆盖度',
                     data: data,
-                    boxWidth: 200,
-                    boxDepth: 110,
-                    regionHeight: 1.5,
-                    shading: 'lambert',
+                    boxWidth: 180,
+                    boxDepth: 100,
+                    regionHeight: 0.3,
+                    shading: 'realistic',
+                    realisticMaterial: {
+                        roughness: 0.3,
+                        metalness: 0.05
+                    },
+                    groundColor: '#020811',
+                    groundLine: {
+                        show: true,
+                        color: 'rgba(0, 208, 132, 0.15)',
+                        lineWidth: 0.5
+                    },
                     light: {
                         main: {
-                            intensity: 2.5,
+                            intensity: 2,
                             shadow: true,
-                            alpha: 50,
-                            beta: 20
+                            shadowQuality: 'high',
+                            alpha: 55,
+                            beta: 25
                         },
-                        ambient: { intensity: 0.8 }
+                        ambient: { intensity: 0.6 }
                     },
                     postEffect: { enable: false },
                     viewControl: {
-                        distance: 110,
-                        alpha: 45,
-                        beta: -10,
+                        distance: 90,
+                        alpha: 50,
+                        beta: -15,
+                        minAlpha: 20,
+                        maxAlpha: 80,
                         autoRotate: true,
-                        autoRotateSpeed: 4,
-                        autoRotateAfterStill: 3
+                        autoRotateSpeed: 5,
+                        autoRotateAfterStill: 2,
+                        animationDurationUpdate: 1000
                     },
                     label: {
-                        show: true,
-                        textStyle: {
-                            color: '#fff',
-                            fontSize: 11,
-                            backgroundColor: 'rgba(0,0,0,0.4)',
-                            padding: [2, 4],
-                            borderRadius: 2
-                        },
-                        formatter: p => p.name.replace('市','').replace('盟','')
-                    },
-                    itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.6)',
-                        borderWidth: 1
+                        show: false
                     },
                     emphasis: {
                         label: {
@@ -1490,10 +1492,14 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                         },
                         itemStyle: { color: '#0aff60' }
                     },
-                    // 高度映射数据值
+                    itemStyle: {
+                        borderColor: 'rgba(0, 224, 255, 0.3)',
+                        borderWidth: 0.8
+                    },
+                    // 高度映射 — 形成地形感：健康区域隆起如高原，退化区域低洼
                     regions: REGIONS.map(r => ({
                         name: r.name,
-                        height: Math.max(0.5, r.cover * 0.35)  // 覆盖度越高柱体越高
+                        height: r.cover < 50 ? r.cover * 0.3 : r.cover * (1.0 + (r.cover - 50) / 100)
                     }))
                 }]
             });
