@@ -1944,12 +1944,10 @@ function init3DMap() {
                 }, 500);
 
                 var has3D = true;
-				renderMap3D();
-				initStationOverlay();
-				setTimeout(updateStationPositions, 100);
+				renderMap3D();
 				console.log("[地图] 3D 渲染完成");
 
-                window.addEventListener('resize', function() { updateStationPositions();
+                window.addEventListener('resize', function() { 
                     var el = document.getElementById('chart-3d-map');
                     if (el) { el.style.width = ''; el.style.height = ''; } // 恢复百分比
                     chart3d && chart3d.resize();
@@ -2041,7 +2039,44 @@ function init3DMap() {
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
-        }// ============ NDVI 返青监测 ============
+        
+
+            // 监测站（跟随3D视角旋转）
+            (function(){
+                var c=document.getElementById('chart-3d-map');if(!c)return;
+                var sd=[[119.2,49.8],[119.7,50.1],[120.3,49.5],[121.5,50],[120.8,48.9],[121.2,48.2],[122,48.8],[119.5,48.5],[120,47.8],[121.8,47.5],[119,47.2],[122.5,49.2],[121.8,46.5],[122.5,46.8],[120.8,46.2],[121,45.8],[122.2,46],[120.5,45.5],[122,45.2],[121.5,46.8],[122.2,44],[123,43.8],[121.5,43.5],[122.8,43.2],[121.2,43],[123.2,44.2],[122.5,44.5],[118.8,43.5],[119.5,43.2],[118.2,42.8],[119,42.5],[117.8,42.2],[118.5,41.8],[119.8,42],[117.5,43],[116.5,44.5],[117.2,44.8],[115.8,44],[116,43.5],[117.5,43.8],[115,43.2],[116.8,42.8],[114.5,43.5],[117,44.2],[115.5,44.5],[113,42],[113.5,41.8],[112.8,41.5],[113.2,41.2],[112.5,40.8],[114,41.5],[111.5,40.8],[111.8,40.6],[111.2,40.4],[111.7,40.2],[112,40.5],[110,41.2],[110.5,41],[109.8,40.8],[110.2,40.6],[109.5,40.4],[110.8,41.4],[109.5,39.8],[110,39.6],[108.8,39.5],[109.8,39.2],[108.5,39],[110.5,39.5],[109,40],[108,41.2],[107.5,41],[107,40.8],[108.5,40.6],[107.2,41.5],[108.8,41],[106.8,39.6],[106.7,39.5],[106.9,39.7],[105,40],[104,39.5],[103.5,39],[105.5,38.5],[104.5,38],[103,38.5],[106,39],[103.8,40.5]];
+                var ov=document.createElement('div');ov.id='st-layer';
+                ov.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none;';
+                c.parentNode.insertBefore(ov,c.nextSibling);
+                var els=[];
+                for(var i=0;i<sd.length;i++){
+                    var d=document.createElement('div');
+                    d.style.cssText='position:absolute;width:6px;height:6px;border-radius:50%;background:rgba(0,255,150,0.8);box-shadow:0 0 8px rgba(0,255,150,0.6);margin:-3px 0 0 -3px;';
+                    ov.appendChild(d);els.push({el:d,lng:sd[i][0],lat:sd[i][1]});
+                }
+                if(window.__stT)clearInterval(window.__stT);
+                window.__stT=setInterval(function(){
+                    if(!chart3d){clearInterval(window.__stT);return;}
+                    try{
+                        var op=chart3d.getOption();
+                        var vc=op.series?op.series[0].viewControl:{};
+                        var a=(vc.alpha||30)*0.01745,bb=(vc.beta||18)*0.01745,d=vc.distance||95;
+                        var cw=c.offsetWidth||800,ch=c.offsetHeight||600;
+                        var sc=90/d;
+                        for(var i=0;i<els.length;i++){
+                            var e=els[i];
+                            var dx=(e.lng-113)/29*cw,dy=(e.lat-46)/16*ch;
+                            var rx=dx*Math.cos(bb)-dy*Math.sin(bb);
+                            var ry=dx*Math.sin(bb)+dy*Math.cos(bb);
+                            var sy=ry*Math.cos(a)*sc,sx=rx*sc;
+                            e.el.style.left=(cw/2+sx)+'px';
+                            e.el.style.top=(ch/2-sy-ry*Math.sin(a)*sc*0.5)+'px';
+                        }
+                    }catch(er){}
+                },50);
+            })();
+
+}// ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
         let ndviInited = false;
@@ -2819,65 +2854,7 @@ function initNDVI() {
         }
 
 
-        // ============ 监测站点标记 ============
-        var STATION_POS = [[119.2,49.8],[119.7,50.1],[120.3,49.5],[121.5,50],[120.8,48.9],
-            [121.2,48.2],[122,48.8],[119.5,48.5],[120,47.8],[121.8,47.5],[119,47.2],[122.5,49.2],
-            [121.8,46.5],[122.5,46.8],[120.8,46.2],[121,45.8],[122.2,46],[120.5,45.5],[122,45.2],[121.5,46.8],
-            [122.2,44],[123,43.8],[121.5,43.5],[122.8,43.2],[121.2,43],[123.2,44.2],[122.5,44.5],
-            [118.8,43.5],[119.5,43.2],[118.2,42.8],[119,42.5],[117.8,42.2],[118.5,41.8],[119.8,42],[117.5,43],
-            [116.5,44.5],[117.2,44.8],[115.8,44],[116,43.5],[117.5,43.8],[115,43.2],[116.8,42.8],[114.5,43.5],[117,44.2],[115.5,44.5],
-            [113,42],[113.5,41.8],[112.8,41.5],[113.2,41.2],[112.5,40.8],[114,41.5],
-            [111.5,40.8],[111.8,40.6],[111.2,40.4],[111.7,40.2],[112,40.5],
-            [110,41.2],[110.5,41],[109.8,40.8],[110.2,40.6],[109.5,40.4],[110.8,41.4],
-            [109.5,39.8],[110,39.6],[108.8,39.5],[109.8,39.2],[108.5,39],[110.5,39.5],[109,40],
-            [108,41.2],[107.5,41],[107,40.8],[108.5,40.6],[107.2,41.5],[108.8,41],
-            [106.8,39.6],[106.7,39.5],[106.9,39.7],
-            [105,40],[104,39.5],[103.5,39],[105.5,38.5],[104.5,38],[103,38.5],[106,39],[103.8,40.5]];
-
-        var stationDots = [];
-        var stationOverlay = null;
-
-        function initStationOverlay() {
-            var container = document.getElementById('chart-3d-map');
-            if (!container || stationOverlay) return;
-            var parent = container.parentNode;
-            stationOverlay = document.createElement('div');
-            stationOverlay.id = 'station-overlay';
-            stationOverlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:hidden;';
-            parent.insertBefore(stationOverlay, container.nextSibling);
-
-            var w = container.offsetWidth || 800, h = container.offsetHeight || 600;
-            for (var i = 0; i < STATION_POS.length; i++) {
-                var pos = STATION_POS[i];
-                var px = (pos[0] - 97) / (126 - 97) * w;
-                var py = (53 - pos[1]) / (53 - 37) * h;
-                var dot = document.createElement('div');
-                dot.className = 'station-dot';
-                var sz = 4 + Math.random() * 2;
-                var delay = (Math.random() * 3).toFixed(1);
-                dot.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;'
-                    + 'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;margin:-' + (sz/2) + 'px 0 0 -' + (sz/2) + 'px;'
-                    + 'background:rgba(0,255,150,0.8);box-shadow:0 0 4px rgba(0,255,150,0.6),0 0 12px rgba(0,255,150,0.2);'
-                    + 'animation:stationBlink 2.5s ease-in-out ' + delay + 's infinite;';
-                stationOverlay.appendChild(dot);
-                stationDots.push({ el: dot, x: pos[0], y: pos[1] });
-            }
-        }
-
-        function updateStationPositions() {
-            var container = document.getElementById('chart-3d-map');
-            if (!container || !stationOverlay) return;
-            var w = container.offsetWidth || 800, h = container.offsetHeight || 600;
-            stationOverlay.style.width = w + 'px';
-            stationOverlay.style.height = h + 'px';
-            for (var i = 0; i < stationDots.length; i++) {
-                var d = stationDots[i];
-                var px = (d.x - 97) / (126 - 97) * w;
-                var py = (53 - d.y) / (53 - 37) * h;
-                d.el.style.left = px + 'px';
-                d.el.style.top = py + 'px';
-            }
-        }
+        
 
 // ============ 启动 ============
 
