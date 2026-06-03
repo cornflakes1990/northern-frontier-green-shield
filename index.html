@@ -146,7 +146,7 @@
             transition: all 0.35s ease;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
         }
         .card::before {
             content: '';
@@ -230,11 +230,11 @@
             transform: translateX(-50%);
             font-size: 12px; font-weight: 600;
             z-index: 10;
-            background: rgba(15, 41, 66, 0.85);
-            color: #eef3f8;
+            background: rgba(238, 243, 248, 0.75);
+            color: #0f2942;
             padding: 3px 12px;
             border-radius: 12px;
-            border: 1px solid rgba(0, 184, 107, 0.3);
+            border: 1px solid rgba(0, 184, 107, 0.15);
             display: flex; align-items: center; gap: 6px;
         }
         .map3d-loading {
@@ -321,7 +321,7 @@
         .ticker-content { flex: 1; overflow: hidden; position: relative; }
         .ticker-text {
             white-space: nowrap;
-            animation: ticker 35s linear infinite;
+            animation: ticker 45s linear infinite;
             font-size: 12px;
             color: var(--text-secondary);
         }
@@ -422,35 +422,42 @@
         }
         .timeline-buttons { display: flex; gap: 8px; }
         .tl-btn {
-            padding: 5px 14px;
-            background: rgba(0, 208, 132, 0.1);
-            border: 1px solid var(--card-border);
-            border-radius: 4px;
+            padding: 6px 16px;
+            background: rgba(0, 184, 107, 0.06);
+            border: 1px solid rgba(0, 184, 107, 0.15);
+            border-radius: 8px;
             color: var(--accent-green);
             font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.25s ease;
         }
-        .tl-btn:hover, .tl-btn.active {
+        .tl-btn:hover {
+            background: rgba(0, 184, 107, 0.1);
+            border-color: rgba(0, 184, 107, 0.3);
+        }
+        .tl-btn.active {
             background: var(--accent-green);
-            color: var(--primary-dark);
+            border-color: var(--accent-green);
+            color: #fff;
         }
 
         .timeline-track {
             position: relative;
-            height: 36px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 18px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 3px;
             cursor: pointer;
             overflow: hidden;
+            margin-top: 6px;
         }
         .timeline-progress {
             position: absolute;
             top: 0; left: 0;
             height: 100%;
-            background: linear-gradient(90deg, rgba(139, 111, 71, 0.8), rgba(212, 165, 116, 0.8), rgba(124, 186, 61, 0.8), rgba(45, 138, 62, 0.8));
-            border-radius: 18px;
-            transition: width 0.3s;
+            background: linear-gradient(90deg, #8b6f47, #d4a574, #a8c455, #4a9f3e, #1a7a2e);
+            border-radius: 3px;
+            transition: width 0.3s ease;
         }
         .timeline-marks {
             position: absolute;
@@ -462,9 +469,9 @@
             pointer-events: none;
         }
         .tl-mark {
-            font-size: 10px;
-            color: var(--text-primary);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+            font-size: 9px;
+            color: var(--text-dim);
+            font-weight: 500;
         }
 
         /* ========== 环境传感大屏 ========== */
@@ -498,7 +505,7 @@
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
         }
-        .sensor-icon { font-size: 22px; margin-bottom: 6px; }
+        .sensor-icon { font-size: 26px; margin-bottom: 6px; }
         .sensor-value {
             font-size: 20px; font-weight: 700;
             font-family: 'Consolas', monospace;
@@ -632,7 +639,7 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
             border-color: var(--accent-green);
-            box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.1);
+            box-shadow: 0 0 0 4px rgba(0, 184, 107, 0.08);
         }
         .form-group textarea { resize: vertical; min-height: 90px; }
         .file-upload {
@@ -694,7 +701,10 @@
             display: flex; gap: 12px;
             padding: 14px 0;
             border-bottom: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.2s;
+            border-radius: 8px;
         }
+        .report-item:hover { background: rgba(0,184,107,0.02); padding-left: 8px; padding-right: 8px; }
         .report-item:last-child { border-bottom: none; }
         .report-avatar {
             width: 36px; height: 36px;
@@ -838,10 +848,10 @@
         }
         .modal-btn {
             padding: 10px 32px;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-light-green));
+            background: linear-gradient(135deg, var(--accent-green), #00d47a);
             border: none;
-            border-radius: 6px;
-            color: var(--primary-dark);
+            border-radius: 10px;
+            color: #fff;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -980,7 +990,7 @@
                             <div class="legend-item"><div class="legend-dot dot-yellow"></div>警戒 50-69%</div>
                             <div class="legend-item"><div class="legend-dot dot-red"></div>退化 &lt;50%</div>
                         </div>
-                        <div class="map3d-corner corner-br" style="padding:3px 8px;">
+                        <div class="map3d-corner corner-bl" style="padding:3px 8px;bottom:42px;">
                             <span style="color:var(--text-dim);font-size:9px;">左键旋转 · 右键平移 · 滚轮缩放</span>
                         </div>
                         <div id="map-minimap"></div>
