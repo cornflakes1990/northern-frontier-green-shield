@@ -1965,17 +1965,31 @@ function init3DMap() {
             }
         }
 
-        function renderMap3D() {
+                        function renderMap3D() {
             if (!chart3d) return;
 
             chart3d.setOption({
                 backgroundColor: 'transparent',
                 visualMap: {
-                    show: false,
+                    show: true,
                     min: 15, max: 90,
+                    left: 20,
+                    bottom: 50,
+                    text: ['茂盛', '枯黄'],
+                    textGap: 24,
+                    textStyle: {
+                        color: '#4a6a8a',
+                        fontSize: 11,
+                        fontWeight: 'bold'
+                    },
                     inRange: {
-                        color: ['#4a3020', '#7a5a3a', '#b8885a', '#d4a574', '#a8c455', '#6abf4a', '#3a9f3e', '#1a7a2e', '#0a5e1a']
-                    }
+                        color: ['#3a1510', '#6a2a1a', '#a86840', '#c9a96e', '#a8c455', '#7ccd3a', '#4a9f3e', '#1a8a2e', '#0a6e1a', '#045a10']
+                    },
+                    itemWidth: 14,
+                    itemHeight: 130,
+                    borderColor: 'rgba(0,180,100,0.1)',
+                    backgroundColor: 'rgba(255,255,255,0.3)',
+                    borderWidth: 0.5
                 },
                 tooltip: {
                     trigger: 'item',
@@ -1983,13 +1997,14 @@ function init3DMap() {
                         if (!p.data) return p.name;
                         var r = REGIONS.find(function(x) { return x.name === p.name; });
                         var h = '<b>' + p.name + '</b><br/>';
-                        h += '草原覆盖度：<span style="color:#00d47a;font-weight:bold">' + p.data.value.toFixed(1) + '%</span><br/>';
-                        if (r) h += '气温：' + r.temp.toFixed(1) + '℃ ｜ 土壤墒情：' + r.soil + '% ｜ PM2.5：' + r.pm;
+                        h += '草原覆盖度：<span style="color:#00b86b;font-weight:bold">' + p.data.value.toFixed(1) + '%</span><br/>';
+                        if (r) h += '气温：' + r.temp.toFixed(1) + '\u2103 | 土壤墒情：' + r.soil + '% | PM2.5：' + r.pm;
                         return h;
                     },
-                    backgroundColor: 'rgba(10,26,46,0.92)',
-                    borderColor: '#00d47a',
-                    textStyle: { color: '#e8edf5' }
+                    backgroundColor: 'rgba(5,15,30,0.9)',
+                    borderColor: '#00b86b',
+                    borderWidth: 1,
+                    textStyle: { color: '#e0e8f0', fontSize: 12 }
                 },
                 series: [{
                     type: 'map3D',
@@ -2001,29 +2016,55 @@ function init3DMap() {
                     shading: 'color',
                     groundColor: '#071218',
                     viewControl: {
-                        alpha: 30, beta: 20, distance: 100,
-                        autoRotate: true, autoRotateSpeed: 4, autoRotateAfterStill: 2,
+                        alpha: 30, beta: 18, distance: 95,
+                        autoRotate: true, autoRotateSpeed: 3.5,
+                        autoRotateAfterStill: 3,
                         minAlpha: 5, maxAlpha: 80,
                         minDistance: 40, maxDistance: 200,
-                        animationDurationUpdate: 300
+                        animationDurationUpdate: 300,
+                        animationEasingUpdate: 'cubicOut'
                     },
                     label: {
-                        show: true, color: '#e8edf5', fontSize: 12, fontWeight: 'bold',
+                        show: true,
+                        color: '#e8edf5',
+                        fontSize: 12,
+                        fontWeight: 'bold',
                         backgroundColor: 'rgba(5,13,26,0.45)',
-                        borderColor: 'rgba(0,212,122,0.25)', borderWidth: 0.5,
-                        padding: [3, 8], borderRadius: 4,
-                        formatter: function(p) { return (p.name||'').replace(/市|盟/g,'').replace('',''); }
+                        borderColor: 'rgba(0,180,100,0.2)',
+                        borderWidth: 0.5,
+                        padding: [4, 10],
+                        borderRadius: 4,
+                        formatter: function(p) { return (p.name||'').replace(/市|盟/g,''); }
                     },
                     emphasis: {
-                        label: { show: true, color: '#22ff70', fontSize: 14, backgroundColor: 'rgba(5,13,26,0.6)', borderColor: '#22ff70', borderWidth: 1 },
-                        itemStyle: { color: '#22ff70' }
+                        label: {
+                            show: true,
+                            color: '#00ff88',
+                            fontSize: 15,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(3,13,20,0.6)',
+                            borderColor: '#00ff88',
+                            borderWidth: 1.5
+                        },
+                        itemStyle: {
+                            color: '#00ff88',
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(0,255,136,0.3)'
+                        }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(56, 217, 232, 0.25)',
-                        borderWidth: 0.5
+                        borderColor: 'rgba(0,200,255,0.12)',
+                        borderWidth: 0.4
                     },
                     regions: REGIONS.map(function(r) {
-                        return { name: r.name, height: Math.max(3, (r.cover/50)*(r.cover/50)*28) };
+                        var c = r.cover;
+                        var h;
+                        if (c >= 80) h = 80 + (c - 80) * 1.5;
+                        else if (c >= 60) h = 30 + (c - 60) * 2.5;
+                        else if (c >= 45) h = 14 + (c - 45) * 1.07;
+                        else if (c >= 30) h = 6 + (c - 30) * 0.53;
+                        else h = 3 + c * 0.1;
+                        return { name: r.name, height: h };
                     })
                 }]
             });
@@ -2035,7 +2076,6 @@ function init3DMap() {
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
-            // 动态呼吸光效：每隔几秒高亮一个区域
             if (window.__mpGlow) clearInterval(window.__mpGlow);
             window.__mpIdx = 0;
             window.__mpGlow = setInterval(function() {
@@ -2043,17 +2083,12 @@ function init3DMap() {
                 var idx = window.__mpIdx;
                 var regions = REGIONS.map(function(r, i) {
                     var isHL = i === idx;
-                    var b = isHL ? 1.5 : 0.5;
-                    var c = isHL ? 'rgba(0,255,150,0.6)' : 'rgba(56,217,232,0.15)';
-                    return { name: r.name, itemStyle: { borderColor: c, borderWidth: b } };
+                    return { name: r.name, itemStyle: { borderColor: isHL ? 'rgba(0,255,150,0.5)' : 'rgba(0,200,255,0.10)', borderWidth: isHL ? 1.5 : 0.4 } };
                 });
                 try { chart3d.setOption({ series: [{ regions: regions }] }); } catch(e) {}
                 window.__mpIdx = (idx + 1) % REGIONS.length;
             }, 3000);
-
-        }
-
-        // ============ NDVI 返青监测 ============
+        }// ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
         let ndviInited = false;
