@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北疆绿盾 - 内蒙古草原生态实时感知与共治平台</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/echarts-gl/2.0.9/echarts-gl.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js';document.head.appendChild(s);"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/echarts-gl@2.0.9/dist/echarts-gl.min.js';document.head.appendChild(s);"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1449,30 +1449,17 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     boxWidth: 200,
                     boxDepth: 110,
                     regionHeight: 4,
-                    shading: 'realistic',
-                    realisticMaterial: {
-                        roughness: 0.4,
-                        metalness: 0.1
-                    },
+                    shading: 'lambert',
                     light: {
                         main: {
-                            intensity: 1.5,
-                            shadow: true,
-                            shadowQuality: 'high',
-                            alpha: 35,
-                            beta: 50
+                            intensity: 2,
+                            shadow: false,
+                            alpha: 40,
+                            beta: 30
                         },
-                        ambient: { intensity: 0.5 },
-                        ambientCubemap: {
-                            diffuseIntensity: 0.3,
-                            specularIntensity: 0.4
-                        }
+                        ambient: { intensity: 1 }
                     },
-                    postEffect: {
-                        enable: true,
-                        bloom: { enable: true, intensity: 0.15 },
-                        SSAO: { enable: true, quality: 'medium', radius: 5 }
-                    },
+                    postEffect: { enable: false },
                     viewControl: {
                         distance: 130,
                         alpha: 40,
