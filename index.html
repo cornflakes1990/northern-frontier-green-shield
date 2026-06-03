@@ -1974,10 +1974,13 @@ function init3DMap() {
                 var regionMap = {};
                 REGIONS.forEach(function(r) { regionMap[r.name] = r; });
 
-                function inside(lng, lat, ring) {
+                function inside(lng, lat, allRings) {
                     var inside = false;
-                    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-                        if ((ring[i][1] > lat) !== (ring[j][1] > lat) && lng < (ring[j][0]-ring[i][0])*(lat-ring[i][1])/(ring[j][1]-ring[i][1])+ring[i][0]) inside = !inside;
+                    for (var ri = 0; ri < allRings.length; ri++) {
+                        var ring = allRings[ri];
+                        for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                            if ((ring[i][1] > lat) !== (ring[j][1] > lat) && lng < (ring[j][0]-ring[i][0])*(lat-ring[i][1])/(ring[j][1]-ring[i][1])+ring[i][0]) inside = !inside;
+                        }
                     }
                     return inside;
                 }
@@ -1991,12 +1994,12 @@ function init3DMap() {
                 }
 
                 var pts = [];
-                var step = 0.085; // ~8km 网格
+                var step = 0.06; // ~6km 网格
 
                 for (var fi = 0; fi < features.length; fi++) {
                     var f = features[fi], name = f.properties.name, region = regionMap[name];
                     if (!region) continue;
-                    var ring = f.geometry.coordinates[0][0];
+                    var rings = f.geometry.coordinates; var allRings = []; for (var pi = 0; pi < rings.length; pi++) { var outerR = rings[pi][0]; for (var ri = 0; ri < outerR.length; ri++) allRings.push(outerR[ri]); } var ring = allRings;
                     var ml=180,xl=-180,mlat=90,xlat=-90;
                     for (var ri = 0; ri < ring.length; ri++) {
                         if (ring[ri][0] < ml) ml = ring[ri][0]; if (ring[ri][0] > xl) xl = ring[ri][0];
@@ -2006,7 +2009,7 @@ function init3DMap() {
 
                     for (var x = ml; x <= xl; x += step) {
                         for (var y = mlat; y <= xlat; y += step) {
-                            if (!inside(x, y, ring)) continue;
+                            if (!inside(x, y, rings)) continue;
                             // 地形噪声：多频叠加产生自然起伏
                             var noise = Math.sin(x*3.5)*Math.cos(y*2.5)*2.5 + Math.sin(x*6+y*4.5)*1.5 + Math.cos(x*1.5-y*2.0+fi)*0.8;
                             var baseH = (cover/100)*(cover/100)*35;
@@ -2075,7 +2078,7 @@ function init3DMap() {
                     coordinateSystem: 'geo3D',
                     data: pts,
                     shading: 'color',
-                    barSize: [0.1, 0.1],
+                    barSize: [0.12, 0.12],
                     minHeight: 0.1,
                     itemStyle: { opacity: 0.95 }
                 }]
