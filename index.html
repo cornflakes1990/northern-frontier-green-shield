@@ -942,7 +942,7 @@
                             <div class="legend-item"><div class="legend-dot dot-red"></div>退化 &lt;50%</div>
                         </div>
                         <div class="map3d-corner corner-br">
-                            <span style="color:var(--text-dim);font-size:10px;">拖拽旋转 · 右键平移 · 滚轮缩放</span>
+                            <span style="color:var(--text-dim);font-size:10px;">左键旋转 · 右键平移 · 滚轮缩放</span>
                         </div>
                         <div class="map3d-loading" id="map3d-loading">
                             <span class="loading-spinner"></span>正在加载内蒙古地理数据 ...
@@ -1808,6 +1808,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 // 给容器写死像素尺寸，解决 echarts-gl WebGL 内部 0 尺寸检测
                 chart3d = echarts.init(chartEl);
                 console.log('[地图] ECharts 初始化成功');
+                chartEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
                 var has3D = true;
 				renderMap3D();
@@ -1902,7 +1903,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
-                }
+        }
 
         // ============ NDVI 返青监测 ============
         let chartNDVI = null;
