@@ -1945,6 +1945,8 @@ function init3DMap() {
 
                 var has3D = true;
 				renderMap3D();
+				initStationOverlay();
+				setTimeout(updateStationPositions, 100);
 				console.log("[地图] 3D 渲染完成");
 
                 window.addEventListener('resize', function() { updateStationPositions();
