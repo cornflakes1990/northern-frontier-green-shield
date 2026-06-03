@@ -979,18 +979,18 @@
         <section id="monitoring">
             <div class="page-header">
                 <h1>&#127793; 草原返青卫星遥感监测中心</h1>
-                <p>基于 NDVI 归一化植被指数的实时返青进程可视化（2026 年 5 月 1 日 - 8 日）</p>
+                <p>基于 NDVI 归一化植被指数的 2026 年全年返青变化趋势 — 拖动时间轴查看各月植被状况</p>
             </div>
 
             <div class="ndvi-grid">
                 <div class="ndvi-main">
-                    <h3>&#128752; 内蒙古草原 NDVI 卫星遥感图 <span style="color:var(--accent-green);font-size:13px;margin-left:auto;font-weight:400;" id="ndvi-current-date">2026-05-08</span></h3>
+                    <h3>&#128752; 内蒙古草原 NDVI 卫星遥感图 <span style="color:var(--accent-green);font-size:13px;margin-left:auto;font-weight:400;" id="ndvi-current-date">2026-07</span></h3>
                     <div id="chart-ndvi"></div>
                     <div class="timeline-bar">
                         <div class="timeline-controls">
                             <div>
-                                <span class="timeline-date" id="timeline-date">2026 年 5 月 8 日</span>
-                                <span style="color:var(--text-secondary);font-size:12px;margin-left:10px;">拖动时间轴查看返青进程</span>
+                                <span class="timeline-date" id="timeline-date">2026 年 7 月</span>
+                                <span style="color:var(--text-secondary);font-size:12px;margin-left:10px;">拖动时间轴查看全年植被变化</span>
                             </div>
                             <div class="timeline-buttons">
                                 <button class="tl-btn" onclick="resetTimeline()">重置</button>
@@ -1000,14 +1000,18 @@
                         <div class="timeline-track" id="timeline-track" onclick="seekTimeline(event)">
                             <div class="timeline-progress" id="timeline-progress" style="width: 100%;"></div>
                             <div class="timeline-marks">
-                                <span class="tl-mark">5/1</span>
-                                <span class="tl-mark">5/2</span>
-                                <span class="tl-mark">5/3</span>
-                                <span class="tl-mark">5/4</span>
-                                <span class="tl-mark">5/5</span>
-                                <span class="tl-mark">5/6</span>
-                                <span class="tl-mark">5/7</span>
-                                <span class="tl-mark">5/8</span>
+                                <span class="tl-mark">1月</span>
+                                <span class="tl-mark">2月</span>
+                                <span class="tl-mark">3月</span>
+                                <span class="tl-mark">4月</span>
+                                <span class="tl-mark">5月</span>
+                                <span class="tl-mark">6月</span>
+                                <span class="tl-mark">7月</span>
+                                <span class="tl-mark">8月</span>
+                                <span class="tl-mark">9月</span>
+                                <span class="tl-mark">10月</span>
+                                <span class="tl-mark">11月</span>
+                                <span class="tl-mark">12月</span>
                             </div>
                         </div>
                     </div>
@@ -1839,7 +1843,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         let chartNDVI = null;
         let chartTrend = null;
         let ndviInited = false;
-        let timelineDay = 8; // 1-8 (5月1日到5月8日)
+        let timelineMonth = 7; // 1-12 (1月到12月)
         let playInterval = null;
 
         async function initNDVI() {
@@ -1862,38 +1866,75 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             }
         }
 
-        function getNDVIData(day) {
-            // day 1-8, 越大返青越好
-            return REGIONS.map(r => ({
-                name: r.name,
-                value: Math.min(0.85, r.ndvi_base + (day - 1) * 0.06 + rand(-0.02, 0.02))
-            }));
+        // 每个盟市的逐月 NDVI 数据（基于真实气候模式模拟）
+        var MONTHLY_NDVI = (function() {
+            // 月系数：1月最低、7月最高、12月回落
+            // 反映内蒙古草原的典型生长季
+            var monthFactor = [0.15, 0.18, 0.28, 0.45, 0.65, 0.82, 0.95, 0.88, 0.72, 0.52, 0.32, 0.18];
+
+            // 每个盟市的基线偏移（纬度越低、越湿润的基线越高）
+            var baseOffset = {
+                '呼伦贝尔市': 0.35, '兴安盟': 0.33, '通辽市': 0.28,
+                '赤峰市': 0.25, '锡林郭勒盟': 0.30, '乌兰察布市': 0.22,
+                '呼和浩特市': 0.28, '包头市': 0.26, '鄂尔多斯市': 0.18,
+                '巴彦淖尔市': 0.20, '乌海市': 0.12, '阿拉善盟': 0.10
+            };
+
+            // 为每个盟市生成 12 个月数据
+            var result = {};
+            REGIONS.forEach(function(r) {
+                var off = baseOffset[r.name] || 0.25;
+                var list = [];
+                for (var m = 0; m < 12; m++) {
+                    // 基础 = 月因子 × 覆盖度换算 + 偏移
+                    var baseVal = monthFactor[m] * (r.cover / 100) * 0.85 + off * (1 - monthFactor[m] * 0.4);
+                    // 加轻微随机噪声
+                    var noise = (Math.random() - 0.5) * 0.03;
+                    var val = Math.min(0.88, Math.max(0.05, baseVal + noise));
+                    list.push(val);
+                }
+                result[r.name] = list;
+            });
+            return result;
+        })();
+
+        function getNDVIData(month) {
+            // month 1-12
+            return REGIONS.map(function(r) {
+                var val = MONTHLY_NDVI[r.name][month - 1];
+                return { name: r.name, value: val };
+            });
         }
 
         function renderNDVI() {
-            const data = getNDVIData(timelineDay);
-            const dateStr = `2026 年 5 月 ${timelineDay} 日`;
+            var data = getNDVIData(timelineMonth);
+            var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+            var dateStr = '2026 年 ' + monthNames[timelineMonth - 1];
             document.getElementById('timeline-date').textContent = dateStr;
-            document.getElementById('ndvi-current-date').textContent = `2026-05-0${timelineDay}`;
-            document.getElementById('timeline-progress').style.width = (timelineDay / 8 * 100) + '%';
+            document.getElementById('ndvi-current-date').textContent = '2026-' + (timelineMonth < 10 ? '0' : '') + timelineMonth;
+            document.getElementById('timeline-progress').style.width = (timelineMonth / 12 * 100) + '%';
 
             // 更新均值
-            const avg = data.reduce((s, d) => s + d.value, 0) / data.length;
+            var avg = 0;
+            for (var i = 0; i < data.length; i++) avg += data[i].value;
+            avg /= data.length;
             document.getElementById('ndvi-avg').textContent = avg.toFixed(2);
             document.getElementById('ndvi-rate').textContent = (avg * 100 / 0.85 * 0.95).toFixed(1) + '%';
-            const best = data.reduce((m, d) => d.value > m.value ? d : m);
+            var best = data[0];
+            for (var i = 1; i < data.length; i++) { if (data[i].value > best.value) best = data[i]; }
             document.getElementById('ndvi-best').textContent = best.name.replace('市','').replace('盟','');
 
             chartNDVI.setOption({
                 backgroundColor: 'transparent',
                 tooltip: {
                     trigger: 'item',
-                    formatter: p => {
+                    formatter: function(p) {
                         if (!p.data) return p.name;
-                        return `<b>${p.name}</b><br/>
-                                NDVI 指数：<span style="color:#00d084">${p.data.value.toFixed(3)}</span><br/>
-                                返青状态：${p.data.value > 0.5 ? '茂盛' : p.data.value > 0.3 ? '中等' : '初返'}<br/>
-                                监测日期：${dateStr}`;
+                        var status = p.data.value > 0.5 ? '茂盛' : p.data.value > 0.3 ? '中等' : '初返';
+                        return '<b>' + p.name + '</b><br/>' +
+                                'NDVI 指数：<span style="color:#00d084">' + p.data.value.toFixed(3) + '</span><br/>' +
+                                '返青状态：' + status + '<br/>' +
+                                '监测日期：' + dateStr;
                     },
                     backgroundColor: 'rgba(5,13,26,0.95)',
                     borderColor: '#00d084',
@@ -1941,49 +1982,65 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         }
 
         function renderTrend() {
+            // 2025 年各月返青率（模拟数据）
+            var data2025 = [18, 22, 32, 48, 65, 78, 85, 82, 70, 52, 32, 20];
+            // 2026 年各月返青率（略高于2025，反映生态改善）
+            var data2026 = [20, 25, 36, 52, 68, 82, 88, 85, 73, 55, 35, 22];
+
             chartTrend.setOption({
                 backgroundColor: 'transparent',
-                tooltip: { trigger: 'axis' },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(ps) {
+                        var s = ps[0].axisValue + '<br/>';
+                        ps.forEach(function(p) {
+                            s += p.marker + ' ' + p.seriesName + ': ' + p.value + '%<br/>';
+                        });
+                        return s;
+                    }
+                },
                 legend: {
                     data: ['2025', '2026'],
-                    textStyle: { color: '#a0b4c8', fontSize: 10 },
-                    top: 0,
-                    right: 0
+                    textStyle: { color: '#4a5a6a', fontSize: 11 },
+                    top: 0, right: 0
                 },
-                grid: { left: 30, right: 10, top: 26, bottom: 22 },
+                grid: { left: 36, right: 10, top: 24, bottom: 20 },
                 xAxis: {
                     type: 'category',
-                    data: ['5/1','5/2','5/3','5/4','5/5','5/6','5/7','5/8'],
-                    axisLine: { lineStyle: { color: 'rgba(160,180,200,0.2)' } },
-                    axisLabel: { color: '#a0b4c8', fontSize: 10 }
+                    data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+                    axisLine: { lineStyle: { color: 'rgba(74,90,106,0.15)' } },
+                    axisLabel: { color: '#4a5a6a', fontSize: 9 }
                 },
                 yAxis: {
                     type: 'value',
                     max: 100,
-                    axisLine: { lineStyle: { color: 'rgba(160,180,200,0.2)' } },
-                    axisLabel: { color: '#a0b4c8', fontSize: 10 },
-                    splitLine: { lineStyle: { color: 'rgba(160,180,200,0.08)' } }
+                    axisLabel: { color: '#4a5a6a', fontSize: 9, formatter: '{value}%' },
+                    splitLine: { lineStyle: { color: 'rgba(74,90,106,0.06)' } }
                 },
                 series: [
                     {
                         name: '2025',
                         type: 'line',
-                        data: [42, 50, 58, 64, 68, 72, 73, 75],
+                        data: data2025,
                         smooth: true,
-                        lineStyle: { color: '#a0b4c8', width: 2 },
-                        itemStyle: { color: '#a0b4c8' }
+                        lineStyle: { color: '#8a9aaa', width: 2 },
+                        itemStyle: { color: '#8a9aaa' },
+                        symbol: 'circle',
+                        symbolSize: 4
                     },
                     {
                         name: '2026',
                         type: 'line',
-                        data: [48, 58, 66, 72, 76, 80, 83, 85],
+                        data: data2026,
                         smooth: true,
-                        lineStyle: { color: '#00d084', width: 3 },
-                        itemStyle: { color: '#00d084' },
+                        lineStyle: { color: '#00b86b', width: 3 },
+                        itemStyle: { color: '#00b86b' },
+                        symbol: 'circle',
+                        symbolSize: 4,
                         areaStyle: {
                             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                { offset: 0, color: 'rgba(0,208,132,0.4)' },
-                                { offset: 1, color: 'rgba(0,208,132,0)' }
+                                { offset: 0, color: 'rgba(0,184,107,0.35)' },
+                                { offset: 1, color: 'rgba(0,184,107,0)' }
                             ])
                         }
                     }
@@ -1992,30 +2049,30 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         }
 
         function togglePlay() {
-            const btn = document.getElementById('tl-play-btn');
+            var btn = document.getElementById('tl-play-btn');
             if (playInterval) {
                 clearInterval(playInterval);
                 playInterval = null;
-                btn.innerHTML = '&#9658; 播放';
+                btn.innerHTML = '▶ 播放';
             } else {
-                btn.innerHTML = '&#9612;&#9612; 暂停';
-                playInterval = setInterval(() => {
-                    timelineDay = timelineDay >= 8 ? 1 : timelineDay + 1;
+                btn.innerHTML = '⏸ 暂停';
+                playInterval = setInterval(function() {
+                    timelineMonth = timelineMonth >= 12 ? 1 : timelineMonth + 1;
                     renderNDVI();
-                }, 1500);
+                }, 1200);
             }
         }
 
         function resetTimeline() {
-            timelineDay = 1;
+            timelineMonth = 1;
             renderNDVI();
         }
 
         function seekTimeline(e) {
-            const track = e.currentTarget;
-            const rect = track.getBoundingClientRect();
-            const ratio = (e.clientX - rect.left) / rect.width;
-            timelineDay = Math.max(1, Math.min(8, Math.round(ratio * 8)));
+            var track = e.currentTarget;
+            var rect = track.getBoundingClientRect();
+            var ratio = (e.clientX - rect.left) / rect.width;
+            timelineMonth = Math.max(1, Math.min(12, Math.round(ratio * 12)));
             renderNDVI();
         }
 
