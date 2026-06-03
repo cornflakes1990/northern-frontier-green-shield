@@ -1441,23 +1441,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         function renderMap3D() {
             if (!chart3d) return;
-            // 直接给每个区域设置颜色（基于覆盖度）
-            function getColor(v) {
-                if (v >= 80) return '#1a7a2e';
-                if (v >= 65) return '#4a9f3e';
-                if (v >= 50) return '#a8c455';
-                if (v >= 40) return '#d4a574';
-                if (v >= 30) return '#b8885a';
-                return '#8b6f47';
-            }
             var data = REGIONS.map(function(r) {
-                return {
-                    name: r.name,
-                    value: r.cover,
-                    itemStyle: {
-                        color: getColor(r.cover)
-                    }
-                };
+                return { name: r.name, value: r.cover };
             });
             chart3d.setOption({
                 backgroundColor: '#0a1628',
@@ -1474,35 +1459,57 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     borderColor: '#00d084',
                     textStyle: { color: '#fff' }
                 },
+                visualMap: {
+                    show: false,
+                    min: 20, max: 90,
+                    inRange: {
+                        color: ['#5a3a1f', '#8b6f47', '#c9a96e', '#a8c455', '#4a9f3e', '#1a7a2e']
+                    }
+                },
                 series: [{
                     type: 'map3D',
                     map: 'innerMongolia',
                     data: data,
                     boxWidth: 200,
                     boxDepth: 120,
-                    regionHeight: 3,
-                    shading: 'color',
-                    groundColor: '#0a1a0a',
+                    regionHeight: 2,
+                    shading: 'realistic',
+                    realisticMaterial: {
+                        roughness: 0.6,
+                        metalness: 0.0
+                    },
+                    groundColor: '#071a0e',
+                    groundLine: {
+                        show: true,
+                        color: 'rgba(0, 208, 132, 0.12)',
+                        lineWidth: 0.5
+                    },
                     light: {
                         main: {
-                            intensity: 1,
-                            alpha: 30,
-                            beta: 40
+                            intensity: 2.0,
+                            shadow: true,
+                            shadowQuality: 'high',
+                            alpha: 55,
+                            beta: 25
                         },
-                        ambient: { intensity: 1.5 }
+                        ambient: { intensity: 0.7 }
                     },
+                    postEffect: { enable: false },
                     viewControl: {
-                        alpha: 35,
-                        beta: 30,
-                        distance: 100,
+                        alpha: 40,
+                        beta: 20,
+                        distance: 95,
+                        minAlpha: 10,
+                        maxAlpha: 80,
                         autoRotate: true,
-                        autoRotateSpeed: 5
+                        autoRotateSpeed: 4,
+                        autoRotateAfterStill: 2
                     },
                     label: {
                         show: true,
                         color: '#fff',
-                        fontSize: 12,
-                        backgroundColor: 'rgba(0,0,0,0.3)',
+                        fontSize: 11,
+                        backgroundColor: 'rgba(0,0,0,0.35)',
                         padding: [2, 5],
                         borderRadius: 3,
                         formatter: function(p) {
@@ -1518,14 +1525,16 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                         itemStyle: { color: '#0aff60' }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.4)',
-                        borderWidth: 1
+                        borderColor: 'rgba(0, 224, 255, 0.25)',
+                        borderWidth: 0.6
                     },
                     regions: REGIONS.map(function(r) {
-                        return {
-                            name: r.name,
-                            height: Math.max(0.5, r.cover * 0.3)
-                        };
+                        // 地形感高度：覆盖度越高隆起越明显
+                        var h;
+                        if (r.cover >= 70) h = 15 + (r.cover - 70) * 0.8;
+                        else if (r.cover >= 50) h = 8 + (r.cover - 50) * 0.35;
+                        else h = 3 + r.cover * 0.1;
+                        return { name: r.name, height: h };
                     })
                 }]
             });
