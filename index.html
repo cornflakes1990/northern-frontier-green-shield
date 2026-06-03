@@ -1744,111 +1744,77 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         function renderMap3D() {
             if (!chart3d) return;
 
-            // 生成散点地形数据
-            function makeScatter() {
-                var features = INNER_MONGOLIA_GEOJSON.features;
-                var regionMap = {};
-                REGIONS.forEach(function(r) { regionMap[r.name] = r; });
-
-                function inside(lng, lat, ring) {
-                    var inside = false;
-                    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-                        if ((ring[i][1] > lat) !== (ring[j][1] > lat) &&
-                            lng < (ring[j][0]-ring[i][0])*(lat-ring[i][1])/(ring[j][1]-ring[i][1])+ring[i][0]) {
-                            inside = !inside;
-                        }
-                    }
-                    return inside;
-                }
-
-                function color(v) {
-                    return v >= 80 ? '#1a7a2e' : v >= 65 ? '#4a9f3e' : v >= 50 ? '#a8c455'
-                         : v >= 40 ? '#d4a574' : v >= 30 ? '#b8885a' : '#5a3a1f';
-                }
-
-                var pts = [];
-                var step = 0.07; // ~7km 更密
-
-                for (var fi = 0; fi < features.length; fi++) {
-                    var f = features[fi];
-                    var name = f.properties.name;
-                    var region = regionMap[name];
-                    if (!region) continue;
-                    var ring = f.geometry.coordinates[0][0];
-                    var minLng=180, maxLng=-180, minLat=90, maxLat=-90;
-                    for (var ri = 0; ri < ring.length; ri++) {
-                        if (ring[ri][0] < minLng) minLng = ring[ri][0];
-                        if (ring[ri][0] > maxLng) maxLng = ring[ri][0];
-                        if (ring[ri][1] < minLat) minLat = ring[ri][1];
-                        if (ring[ri][1] > maxLat) maxLat = ring[ri][1];
-                    }
-                    var cover = region.cover;
-                    var clr = color(cover);
-
-                    for (var x = minLng; x <= maxLng; x += step) {
-                        for (var y = minLat; y <= maxLat; y += step) {
-                            if (!inside(x, y, ring)) continue;
-                            // 噪声地形
-                            var noise = Math.sin(x*4.0)*Math.cos(y*3.0)*3 +
-                                        Math.sin(x*7.0+y*5.0)*1.5;
-                            var baseH = (cover/100)*(cover/100)*35;
-                            var z = Math.max(0.1, baseH + noise);
-                            pts.push([x, y, z, clr]);
-                        }
-                    }
-                }
-                return pts;
-            }
-
-            console.log('[地图] 生成散点地形...');
-            var t0 = Date.now();
-            var pts = makeScatter();
-            console.log('[地图] 点数:', pts.length, '耗时:', Date.now()-t0, 'ms');
-
-            if (pts.length === 0) { renderMap2DFallback(); return; }
+            var data = REGIONS.map(function(r) {
+                return { name: r.name, value: r.cover };
+            });
 
             chart3d.setOption({
                 backgroundColor: '#050d1a',
-                geo3D: {
-                    map: 'innerMongolia',
-                    shading: 'color',
-                    boxWidth: 200, boxDepth: 120,
-                    groundColor: '#020a12',
-                    regionHeight: 0,
-                    itemStyle: {
-                        color: '#0a1418',
-                        borderColor: 'rgba(0, 224, 255, 0.1)',
-                        borderWidth: 0.1
-                    },
-                    label: {
-                        show: true, color: '#fff', fontSize: 12, fontWeight: 'bold',
-                        backgroundColor: 'rgba(5,13,26,0.4)',
-                        borderColor: 'rgba(0,208,132,0.2)', borderWidth: 0.5,
-                        padding: [3, 8], borderRadius: 4,
-                        formatter: function(p) { return (p.name||'').replace('市','').replace('盟',''); }
-                    },
-                    emphasis: {
-                        label: { color: '#0aff60', fontSize: 14 },
-                        itemStyle: { color: '#0a2840' }
-                    },
-                    viewControl: {
-                        alpha: 25, beta: 15, distance: 85,
-                        autoRotate: true, autoRotateSpeed: 4,
-                        autoRotateAfterStill: 2
-                    },
-                    light: {
-                        main: { intensity: 2, alpha: 35, beta: 30 },
-                        ambient: { intensity: 0.8 }
-                    },
-                    postEffect: { enable: false }
+                visualMap: {
+                    show: false,
+                    min: 20, max: 90,
+                    inRange: {
+                        color: ['#5a3a1f', '#7a5430', '#b8885a', '#d4a574', '#a8c455', '#7ccd3a', '#4a9f3e', '#1a7a2e', '#0d5e1a']
+                    }
                 },
                 series: [{
-                    type: 'scatter3D',
-                    coordinateSystem: 'geo3D',
-                    data: pts,
-                    symbol: 'circle',
-                    symbolSize: 1.2,
-                    itemStyle: { opacity: 0.85 }
+                    type: 'map3D',
+                    map: 'innerMongolia',
+                    data: data,
+                    boxWidth: 240,
+                    boxDepth: 140,
+                    regionHeight: 1,
+                    shading: 'color',
+                    groundColor: '#030d10',
+                    groundLine: {
+                        show: true,
+                        color: 'rgba(0, 208, 132, 0.08)',
+                        lineWidth: 0.3
+                    },
+                    viewControl: {
+                        alpha: 28,
+                        beta: 18,
+                        distance: 100,
+                        autoRotate: true,
+                        autoRotateSpeed: 4,
+                        autoRotateAfterStill: 3
+                    },
+                    label: {
+                        show: true,
+                        color: '#ffffff',
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        backgroundColor: 'rgba(5,13,26,0.55)',
+                        borderColor: 'rgba(0,208,132,0.3)',
+                        borderWidth: 0.5,
+                        padding: [3, 8],
+                        borderRadius: 4,
+                        formatter: function(p) {
+                            return (p.name||'').replace('市','').replace('盟','');
+                        }
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            color: '#0aff60',
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(5,13,26,0.7)',
+                            borderColor: '#0aff60',
+                            borderWidth: 1
+                        },
+                        itemStyle: { color: '#0aff60' }
+                    },
+                    itemStyle: {
+                        borderColor: 'rgba(0, 224, 255, 0.25)',
+                        borderWidth: 0.6
+                    },
+                    regions: REGIONS.map(function(r) {
+                        var c = r.cover;
+                        // 平方放大：阿拉善 35%→12, 呼伦贝尔 85%→72
+                        var h = (c / 50) * (c / 50) * 25;
+                        return { name: r.name, height: Math.max(3, h) };
+                    })
                 }]
             });
 
@@ -1861,8 +1827,6 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
-
-            console.log('[地图] 3D 散点地形渲染完成');
         }// ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
