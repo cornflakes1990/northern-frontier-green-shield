@@ -1363,22 +1363,29 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             });
         }
 
+        function isMap3DAvailable() {
+            try {
+                var c = echarts.init(document.createElement('div'));
+                c.setOption({ series: [{ type: 'map3D', map: '' }] });
+                c.dispose();
+                return true;
+            } catch(e) { return false; }
+        }
+
         async function init3DMap() {
             try {
                 echarts.registerMap('innerMongolia', INNER_MONGOLIA_GEOJSON);
                 document.getElementById('map3d-loading').style.display = 'none';
                 chart3d = echarts.init(document.getElementById('chart-3d-map'));
 
-                // try 3D, fallback to 2D if echarts-gl not loaded
-                try {
+                if (isMap3DAvailable()) {
                     renderMap3D();
-                } catch (e) {
-                    console.warn('3D fail, fallback to 2D:', e.message);
+                } else {
+                    console.warn('map3D 不可用，降级为 2D 地图');
                     renderMap2DFallback();
                 }
 
                 window.addEventListener('resize', () => chart3d && chart3d.resize());
-                // 布局完成后强制刷新尺寸
                 setTimeout(() => chart3d && chart3d.resize(), 300);
             } catch (e) {
                 console.error('地图初始化失败:', e);
