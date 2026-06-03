@@ -178,14 +178,41 @@
         .trend-down { color: var(--accent-red); }
 
         /* ========== Dashboard ========== */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 180px 1fr 180px;
+                .dashboard-grid {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-            height: calc(100vh - 85px);
+            height: calc(100vh - 82px);
         }
-        .dashboard-left, .dashboard-right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start; }
-        .dashboard-center { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+        .dashboard-kpis {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .dashboard-kpis .card {
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .dashboard-kpis .card-value {
+            font-size: 22px;
+        }
+        .dashboard-kpis .card-title {
+            font-size: 10px;
+            justify-content: center;
+        }
+        .dashboard-kpis .card-trend {
+            font-size: 9px;
+            justify-content: center;
+        }
+        .dashboard-map-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        
 
         .map3d-container {
             flex: 1;
@@ -832,49 +859,26 @@
             .sensors-mid { grid-template-columns: 1fr; }
         }
         @media (max-width: 1600px) {
-            .dashboard-grid { grid-template-columns: 150px 1fr 150px; gap: 10px; }
-            section { padding: 12px 14px; }
-            .card-value { font-size: 24px; }
+            section { padding: 10px 12px; }
+            .dashboard-kpis { grid-template-columns: repeat(4, 1fr); }
         }
         @media (max-width: 1400px) {
             .sensors-stats { grid-template-columns: repeat(3, 1fr); }
             .sensors-mid { grid-template-columns: 1fr; }
-            .dashboard-grid { grid-template-columns: 130px 1fr 140px; gap: 8px; }
-            .card-value { font-size: 20px; }
-            .card { padding: 10px 12px; }
-            .card-title { font-size: 10px; }
+            .dashboard-grid { height: calc(100vh - 78px); }
         }
         @media (max-width: 1200px) {
-            .dashboard-grid { grid-template-columns: 110px 1fr 120px; gap: 6px; }
-            .card { padding: 8px 10px; }
-            .card-value { font-size: 16px; }
-            .card-title { font-size: 9px; letter-spacing: 0; }
+            .dashboard-kpis { grid-template-columns: repeat(4, 1fr); }
+            .dashboard-kpis .card { padding: 6px 8px; }
+            .dashboard-kpis .card-value { font-size: 16px; }
             #map-minimap { display: none; }
-        }
-        @media (max-width: 1100px) {
-            .dashboard-grid { grid-template-columns: 1fr; height: auto; }
-            .dashboard-left { display: grid; grid-template-columns: 1fr; gap: 8px; }
-            .ndvi-grid { grid-template-columns: 1fr; }
-            .sensors-bottom { grid-template-columns: 1fr; }
-            .station-list { grid-template-columns: repeat(2, 1fr); }
-            .governance-grid { grid-template-columns: 1fr; }
-        }
-        
-            .dashboard-left, .dashboard-right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-            .ndvi-grid { grid-template-columns: 1fr; }
-            .sensors-bottom { grid-template-columns: 1fr; }
-            .station-list { grid-template-columns: repeat(2, 1fr); }
-            .governance-grid { grid-template-columns: 1fr; }
-            #chart-wildlife { height: 300px !important; }
         }
         @media (max-width: 768px) {
             section { padding: 10px 12px; }
             .sensors-stats { grid-template-columns: repeat(2, 1fr); }
             .station-list { grid-template-columns: repeat(2, 1fr); }
-            .dashboard-left, .dashboard-right { grid-template-columns: 1fr 1fr; }
             nav .nav-links a { padding: 5px 10px; font-size: 12px; }
             nav { padding: 0 10px; }
-            .map3d-container { min-height: 250px; }
             #chart-ndvi { height: 280px; }
             #chart-wildlife { height: 250px !important; }
         }
@@ -910,33 +914,53 @@
     <main>
         <!-- ========== 生态全景大屏 ========== -->
         <section id="dashboard" class="active">
-            <div class="dashboard-grid">
-                <!-- 左侧 -->
-                <div class="dashboard-left">
+                    <div class="dashboard-grid">
+                <!-- KPI 卡片行（8 个） -->
+                <div class="dashboard-kpis">
                     <div class="card">
                         <div class="card-title">&#127807; 草原覆盖度</div>
                         <div class="card-value pulse-num" id="kpi-cover">75.3<span class="card-unit">%</span></div>
-                        <div class="card-trend trend-up">&#9650; 较去年同期 +2.1%</div>
+                        <div class="card-trend trend-up">&#9650; +2.1%</div>
                     </div>
                     <div class="card">
                         <div class="card-title">&#128736; 沙化治理率</div>
                         <div class="card-value pulse-num" id="kpi-treat">45.6<span class="card-unit">%</span></div>
-                        <div class="card-trend trend-up">&#9650; 较去年同期 +3.8%</div>
+                        <div class="card-trend trend-up">&#9650; +3.8%</div>
                     </div>
                     <div class="card">
                         <div class="card-title">&#127793; 全区返青率</div>
                         <div class="card-value pulse-num" id="kpi-greenup">78.5<span class="card-unit">%</span></div>
-                        <div class="card-trend trend-up">&#9650; 同比 2025 +5.2%</div>
+                        <div class="card-trend trend-up">&#9650; +5.2%</div>
                     </div>
                     <div class="card">
                         <div class="card-title">&#128100; 在线哨兵</div>
                         <div class="card-value pulse-num" id="kpi-volunteer">8932<span class="card-unit">人</span></div>
-                        <div class="card-trend trend-up">&#9650; 本月 +156</div>
+                        <div class="card-trend trend-up">&#9650; +156</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">&#127777; 平均气温</div>
+                        <div class="card-value pulse-num" id="kpi-temp">12.5<span class="card-unit">&#8451;</span></div>
+                        <div class="card-trend trend-up">&#9650; +3.2&#8451;</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">&#128167; 累计降水</div>
+                        <div class="card-value pulse-num" id="kpi-rain">28.6<span class="card-unit">mm</span></div>
+                        <div class="card-trend trend-down">&#9660; -15%</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">&#127810; 碳汇储量</div>
+                        <div class="card-value pulse-num" id="kpi-carbon">2.4<span class="card-unit">亿吨</span></div>
+                        <div class="card-trend trend-up">&#9650; +0.3</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">&#9888; 沙化预警</div>
+                        <div class="card-value pulse-num" id="kpi-warn">3<span class="card-unit">个盟市</span></div>
+                        <div class="card-trend trend-down">&#9660; -1</div>
                     </div>
                 </div>
 
-                <!-- 中间 3D 地图 -->
-                <div class="dashboard-center">
+                <!-- 地图区域 -->
+                <div class="dashboard-map-wrap">
                     <div class="map3d-container">
                         <div class="map3d-title">
                             <span class="live-dot"></span>
@@ -975,32 +999,7 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 右侧 -->
-                <div class="dashboard-right">
-                    <div class="card">
-                        <div class="card-title">&#127777; 全区平均气温</div>
-                        <div class="card-value pulse-num" id="kpi-temp">12.5<span class="card-unit">&#8451;</span></div>
-                        <div class="card-trend trend-up">&#9650; 较上周 +3.2&#8451;</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title">&#128167; 累计降水量</div>
-                        <div class="card-value pulse-num" id="kpi-rain">28.6<span class="card-unit">mm</span></div>
-                        <div class="card-trend trend-down">&#9660; 较上月 -15%</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title">&#127810; 碳汇储量</div>
-                        <div class="card-value pulse-num" id="kpi-carbon">2.4<span class="card-unit">亿吨</span></div>
-                        <div class="card-trend trend-up">&#9650; 年增 +0.3 亿吨</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title">&#9888; 沙化预警区</div>
-                        <div class="card-value pulse-num" id="kpi-warn">3<span class="card-unit">个盟市</span></div>
-                        <div class="card-trend trend-down">&#9660; 较上月 -1</div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </div></section>
 
         <!-- ========== 返青监测 ========== -->
         <section id="monitoring">
