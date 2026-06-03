@@ -1362,131 +1362,117 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 }
             });
         }
-
-        // 强制 chart 容器有明确的像素尺寸（解决 echarts-gl "Dom has no width or height"）
-        function fixChartSize() {
-            var el = document.getElementById('chart-3d-map');
-            if (el) {
-                el.style.width = el.offsetWidth + 'px';
-                el.style.height = el.offsetHeight + 'px';
-                console.log('[地图] 固定容器尺寸:', el.style.width, el.style.height);
-            }
-        }
-
-        function isMap3DAvailable() {
-            try {
-                var d = document.createElement('div');
-                d.style.width = '100px';
-                d.style.height = '100px';
-                document.body.appendChild(d);
-                var c = echarts.init(d);
-                c.setOption({ series: [{ type: 'map3D', map: '' }] });
-                var ret = true;
-                c.dispose();
-                d.remove();
-                return ret;
-            } catch(e) { return false; }
-        }
-
-        async function init3DMap() {
-            console.log('[地图] init3DMap 开始');
-            try {
-                console.log('[地图] 注册地图数据...');
-                echarts.registerMap('innerMongolia', INNER_MONGOLIA_GEOJSON);
-                console.log('[地图] 注册成功');
-
-                document.getElementById('map3d-loading').style.display = 'none';
-                var chartEl = document.getElementById('chart-3d-map');
-                console.log('[地图] 容器尺寸:', chartEl.offsetWidth, 'x', chartEl.offsetHeight);
-                // 给容器写死像素尺寸，解决 echarts-gl WebGL 内部 0 尺寸检测
-                fixChartSize();
-                chart3d = echarts.init(chartEl);
-                console.log('[地图] ECharts 初始化成功');
-
-                var has3D = isMap3DAvailable();
-                console.log('[地图] map3D 可用:', has3D);
-                if (has3D) {
-                    try {
-                        renderMap3D();
-                        console.log('[地图] 3D 渲染完成');
-                    } catch(e) {
-                        console.warn('[地图] 3D 渲染抛异常:', e.message);
-                        renderMap2DFallback();
-                        console.log('[地图] 降级为 2D');
-                    }
-                } else {
-                    console.warn('[地图] map3D 不可用，降级为 2D');
-                    renderMap2DFallback();
-                    console.log('[地图] 2D 渲染完成');
-                }
-
-                window.addEventListener('resize', function() {
-                    var el = document.getElementById('chart-3d-map');
-                    if (el) { el.style.width = ''; el.style.height = ''; } // 恢复百分比
-                    chart3d && chart3d.resize();
-                });
-                setTimeout(function() {
-                    console.log('[地图] resize 触发，尺寸:', chart3d ? chart3d.getWidth() + 'x' + chart3d.getHeight() : '无实例');
-                    chart3d && chart3d.resize();
-                }, 300);
-            } catch (e) {
-                console.error('[地图] 初始化失败:', e);
-                var loadingEl = document.getElementById('map3d-loading');
-                if (loadingEl) {
-                    loadingEl.innerHTML =
-                        '⚠ 地图渲染失败<br><span style="font-size:12px;color:var(--text-dim)">' + (e.message || String(e)) + '</span>';
-                }
-            }
-        }
-
         function renderMap3D() {
             if (!chart3d) return;
-            var data = REGIONS.map(function(r) {
-                return { name: r.name, value: r.cover };
-            });
-            chart3d.setOption({
-                backgroundColor: '#0a1628',
-                tooltip: {
-                    trigger: 'item',
-                    formatter: function(p) {
-                        if (!p.data) return p.name;
-                        var r = REGIONS.find(function(x) { return x.name === p.name; });
-                        return '<b>' + p.name + '</b><br/>' +
-                            '覆盖度：<span style="color:#00d084">' + p.data.value.toFixed(1) + '%</span><br/>' +
-                            (r ? '气温：' + r.temp.toFixed(1) + '℃<br/>土壤墒情：' + r.soil + '%' : '');
-                    },
-                    backgroundColor: 'rgba(5,13,26,0.95)',
-                    borderColor: '#00d084',
-                    textStyle: { color: '#fff' }
-                },
-                visualMap: {
-                    show: false,
-                    min: 20, max: 90,
-                    inRange: {
-                        color: ['#5a3a1f', '#8b6f47', '#c9a96e', '#a8c455', '#4a9f3e', '#1a7a2e']
+
+            // 点阵地形数据生成：在内蒙边界内产生 ~1500 个点
+            function generateTerrain() {
+                // 多边形内点测试（射线法）
+                function pointInPolygon(lng, lat, polygon) {
+                    var inside = false;
+                    for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                        var xi = polygon[i][0], yi = polygon[i][1];
+                        var xj = polygon[j][0], yj = polygon[j][1];
+                        if ((yi > lat) !== (yj > lat) && lng < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
+                            inside = !inside;
+                        }
                     }
-                },
-                series: [{
-                    type: 'map3D',
+                    return inside;
+                }
+
+                // 判断点是否在内蒙古范围内
+                function inMongolia(lng, lat) {
+                    var features = INNER_MONGOLIA_GEOJSON.features;
+                    for (var fi = 0; fi < features.length; fi++) {
+                        var feat = features[fi];
+                        var coords = feat.geometry.coordinates;
+                        // MultiPolygon: 每个元素是一个 polygon 数组
+                        for (var pi = 0; pi < coords.length; pi++) {
+                            var rings = coords[pi];
+                            // 第一个 ring 是外环，后续是内环（空洞）
+                            if (pointInPolygon(lng, lat, rings[0])) {
+                                // 检查是否在空洞中
+                                var inHole = false;
+                                for (var ri = 1; ri < rings.length; ri++) {
+                                    if (pointInPolygon(lng, lat, rings[ri])) {
+                                        inHole = true;
+                                        break;
+                                    }
+                                }
+                                if (!inHole) return { in: true, featureIndex: fi };
+                            }
+                        }
+                    }
+                    return { in: false };
+                }
+
+                // 获取区域的覆盖度和颜色
+                function getRegionCover(featureIndex) {
+                    var name = INNER_MONGOLIA_GEOJSON.features[featureIndex].properties.name;
+                    var region = null;
+                    for (var i = 0; i < REGIONS.length; i++) {
+                        if (REGIONS[i].name === name) { region = REGIONS[i]; break; }
+                    }
+                    if (!region) return { cover: 50, color: '#a8c455' };
+                    var cover = region.cover;
+                    // NDVI 风格色带
+                    var color;
+                    if (cover >= 80) color = '#1a7a2e';
+                    else if (cover >= 65) color = '#4a9f3e';
+                    else if (cover >= 50) color = '#a8c455';
+                    else if (cover >= 40) color = '#d4a574';
+                    else if (cover >= 30) color = '#b8885a';
+                    else color = '#8b6f47';
+                    return { cover: cover, color: color };
+                }
+
+                // 生成网格采样点
+                var points = [];
+                // 内蒙古经纬度范围
+                var minLng = 97.17, maxLng = 126.07, minLat = 37.41, maxLat = 53.34;
+                var step = 0.35; // 约 35km 网格间距
+
+                for (var x = minLng; x <= maxLng; x += step) {
+                    for (var y = minLat; y <= maxLat; y += step) {
+                        var result = inMongolia(x, y);
+                        if (!result.in) continue;
+
+                        var rc = getRegionCover(result.featureIndex);
+                        // 高度 = 覆盖度影响 + 地形噪声（正弦组合模拟丘陵）
+                        var noise = Math.sin(x * 0.6) * Math.cos(y * 0.4) * 6 +
+                                    Math.sin(x * 1.3 + y * 0.8) * 3 +
+                                    Math.cos(x * 0.2 - y * 1.1) * 2 +
+                                    (Math.random() - 0.5) * 2;
+                        // 基础高度 = 根据覆盖度（绿色好的区域隆起更高）
+                        var baseH = (rc.cover / 100) * (rc.cover / 100) * 35;
+                        var height = Math.max(1, baseH + noise);
+
+                        points.push({
+                            value: [x, y, height],
+                            itemStyle: { color: rc.color },
+                            name: '' // name 会被 geo3D 用来做区域标签
+                        });
+                    }
+                }
+                return { points: points };
+            }
+
+            console.log('[地图] 生成地形点阵...');
+            var terrain = generateTerrain();
+            console.log('[地图] 地形点数:', terrain.points.length);
+
+            chart3d.setOption({
+                geo3D: {
                     map: 'innerMongolia',
-                    data: data,
+                    shading: 'color',
                     boxWidth: 200,
                     boxDepth: 120,
-                    regionHeight: 2,
-                    shading: 'color',
                     groundColor: '#020a10',
-                    light: {
-                        main: { intensity: 1, alpha: 30, beta: 40 },
-                        ambient: { intensity: 1.5 }
-                    },
-                    postEffect: { enable: false },
-                    viewControl: {
-                        alpha: 20,
-                        beta: 25,
-                        distance: 80,
-                        autoRotate: true,
-                        autoRotateSpeed: 4,
-                        autoRotateAfterStill: 2
+                    itemStyle: {
+                        color: '#0a1628',
+                        opacity: 1,
+                        borderColor: 'rgba(0, 224, 255, 0.25)',
+                        borderWidth: 0.5
                     },
                     label: {
                         show: true,
@@ -1500,31 +1486,40 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                         }
                     },
                     emphasis: {
-                        label: { show: true, color: '#0aff60', fontSize: 14 },
-                        itemStyle: { color: '#0aff60' }
+                        itemStyle: { color: '#0a2840' },
+                        label: { color: '#0aff60', fontSize: 14 }
                     },
+                    viewControl: {
+                        alpha: 30,
+                        beta: 25,
+                        distance: 90,
+                        autoRotate: true,
+                        autoRotateSpeed: 4
+                    },
+                    light: {
+                        main: { intensity: 1, alpha: 30, beta: 40 },
+                        ambient: { intensity: 1.5 }
+                    },
+                    postEffect: { enable: false }
+                },
+                series: [{
+                    type: 'bar3D',
+                    coordinateSystem: 'geo3D',
+                    data: terrain.points,
+                    shading: 'color',
+                    barSize: [0.18, 0.18],
+                    minHeight: 0,
+                    bevelSize: 0.01,
                     itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.35)',
-                        borderWidth: 1
-                    },
-                    // 高度平方放大 + 分段基座，使不同覆盖率区域的高度肉眼可辨
-                    // 阿拉善 35% → 5, 呼伦贝尔 85% → 70
-                    regions: REGIONS.map(function(r) {
-                        return { name: r.name, height: (r.cover / 100) * (r.cover / 100) * 100 };
-                    })
+                        opacity: 0.95
+                    }
                 }]
             });
-            chart3d.resize();
-            chart3d.off('click');
-            chart3d.on('click', function(p) {
-                if (p.data && p.name) {
-                    var r = REGIONS.find(function(x) { return x.name === p.name; });
-                    if (r) showRegionInfo(p.name, r.cover, r.status);
-                }
-            });
-        }
 
-        // ============ NDVI 返青监测 ============
+            chart3d.resize();
+            console.log('[地图] 地形渲染完成, 点数:', terrain.points.length);
+        }
+// ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
         let ndviInited = false;
