@@ -1030,6 +1030,13 @@
                         <h3 style="font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">&#128247; 内蒙古草原野生动物活动热力图 <span style="color:var(--accent-green);font-size:13px;font-weight:400;" id="wildlife-current-date">2026-07</span></h3>
                         <div id="chart-wildlife" style="width:100%;height:420px;"></div>
                     </div>
+                                        <div id="week-trend-container" style="margin:8px 0 0 0;padding:10px 14px;background:rgba(255,255,255,0.5);border:1px solid rgba(0,184,107,0.08);border-radius:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                            <span style="font-size:12px;color:var(--text-dim);font-weight:500;">&#128200; 最近 7 天变化趋势</span>
+                            <span style="font-size:11px;color:var(--accent-green);font-weight:600;" id="week-trend-label">NDVI 返青率</span>
+                        </div>
+                        <div id="chart-week-trend" style="width:100%;height:60px;"></div>
+                    </div>
                     <div class="timeline-bar">
                         <div class="timeline-controls">
                             <div>
@@ -1972,6 +1979,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             el = document.getElementById('wildlife-stats');
             if (el) el.style.display = mode === 'wildlife' ? 'block' : 'none';
 
+            setTimeout(renderWeekChart, 50);
             if (mode === 'wildlife') {
                 if (!wildlifeInited) {
                     wildlifeInited = true;
@@ -2119,6 +2127,76 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             });
             chartSpecies.resize();
         }
+
+        // ============ 最近 7 天趋势 ============
+        var weekChart = null;
+        function initWeekChart() {
+            weekChart = echarts.init(document.getElementById('chart-week-trend'));
+            renderWeekChart();
+        }
+
+        function getWeekData() {
+            var days = [];
+            var ndviVals = [];
+            var wlVals = [];
+            var now = new Date();
+            for (var i = 6; i >= 0; i--) {
+                var d = new Date(now);
+                d.setDate(d.getDate() - i);
+                days.push((d.getMonth()+1) + '/' + d.getDate());
+                var monthFactor = 0.3 + (timelineMonth / 12) * 0.6;
+                var dayNoise = Math.sin(i * 1.2) * 0.04 + (i % 3) * 0.02;
+                ndviVals.push(Math.min(0.85, Math.max(0.1, monthFactor + dayNoise)));
+                var wlFactor = 0.2 + (timelineMonth / 12) * 0.7;
+                var wlNoise = Math.cos(i * 0.9) * 0.05 + (i % 2) * 0.03;
+                wlVals.push(Math.min(1.0, Math.max(0.05, wlFactor + wlNoise)));
+            }
+            return { days: days, ndvi: ndviVals, wl: wlVals };
+        }
+
+        function renderWeekChart() {
+            if (!weekChart) return;
+            var wd = getWeekData();
+            var isAnimal = ecoMode === 'wildlife';
+            var data = isAnimal ? wd.wl : wd.ndvi;
+            var lineColor = isAnimal ? '#d4a574' : '#4a9f3e';
+            var areaColor = isAnimal ? 'rgba(212,165,116,0.25)' : 'rgba(74,159,62,0.25)';
+            document.getElementById('week-trend-label').textContent = isAnimal ? '动物活动指数' : 'NDVI 返青率';
+
+            weekChart.setOption({
+                backgroundColor: 'transparent',
+                grid: { left: 2, right: 2, top: 4, bottom: 12 },
+                xAxis: {
+                    type: 'category',
+                    data: wd.days,
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    axisLabel: { color: '#8a9aaa', fontSize: 8 }
+                },
+                yAxis: {
+                    type: 'value', show: false,
+                    min: isAnimal ? 0.05 : 0.1,
+                    max: isAnimal ? 1.0 : 0.9
+                },
+                series: [{
+                    type: 'line',
+                    data: data,
+                    smooth: true,
+                    lineStyle: { color: lineColor, width: 2 },
+                    itemStyle: { color: lineColor },
+                    symbol: 'circle',
+                    symbolSize: 3,
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: areaColor },
+                            { offset: 1, color: 'rgba(0,0,0,0)' }
+                        ])
+                    }
+                }]
+            });
+            weekChart.resize();
+        }
+
 function initNDVI() {
             try {
                 if (!echarts.getMap('innerMongolia')) {
@@ -2126,6 +2204,7 @@ function initNDVI() {
                 }
                 chartNDVI = echarts.init(document.getElementById('chart-ndvi'));
                 chartTrend = echarts.init(document.getElementById('chart-trend'));
+                initWeekChart();
                 renderNDVI();
                 renderTrend();
                 window.addEventListener('resize', () => {
@@ -2333,6 +2412,7 @@ function initNDVI() {
                     timelineMonth = timelineMonth >= 12 ? 1 : timelineMonth + 1;
                     if (ecoMode === 'ndvi') { renderNDVI(); }
                     else { renderWildlife(); renderSpecies(); }
+                    renderWeekChart();
                 }, 1200);
             }
         }
@@ -2341,6 +2421,7 @@ function initNDVI() {
             timelineMonth = 1;
             if (ecoMode === 'ndvi') renderNDVI();
             else { renderWildlife(); renderSpecies(); }
+            renderWeekChart();
         }
 
         function seekTimeline(e) {
