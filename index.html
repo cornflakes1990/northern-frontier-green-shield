@@ -2135,21 +2135,22 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             renderWeekChart();
         }
 
-        function getWeekData() {
+                function getWeekData() {
             var days = [];
             var ndviVals = [];
             var wlVals = [];
             var now = new Date();
+            var currentMonth = now.getMonth() + 1;
+            var monthBase = 0.3 + (currentMonth / 12) * 0.6;
+            var wlBase = 0.2 + (currentMonth / 12) * 0.7;
             for (var i = 6; i >= 0; i--) {
                 var d = new Date(now);
                 d.setDate(d.getDate() - i);
-                days.push((d.getMonth()+1) + '/' + d.getDate());
-                var monthFactor = 0.3 + (timelineMonth / 12) * 0.6;
+                days.push((d.getMonth()+1) + "/" + d.getDate());
                 var dayNoise = Math.sin(i * 1.2) * 0.04 + (i % 3) * 0.02;
-                ndviVals.push(Math.min(0.85, Math.max(0.1, monthFactor + dayNoise)));
-                var wlFactor = 0.2 + (timelineMonth / 12) * 0.7;
+                ndviVals.push(Math.min(0.85, Math.max(0.1, monthBase + dayNoise)));
                 var wlNoise = Math.cos(i * 0.9) * 0.05 + (i % 2) * 0.03;
-                wlVals.push(Math.min(1.0, Math.max(0.05, wlFactor + wlNoise)));
+                wlVals.push(Math.min(1.0, Math.max(0.05, wlBase + wlNoise)));
             }
             return { days: days, ndvi: ndviVals, wl: wlVals };
         }
