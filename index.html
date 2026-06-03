@@ -40,8 +40,8 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background-image:
-                linear-gradient(rgba(0, 184, 107, 0.08) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 184, 107, 0.08) 1px, transparent 1px);
+                linear-gradient(rgba(0, 184, 107, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 184, 107, 0.06) 1px, transparent 1px);
             background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
@@ -55,10 +55,10 @@
         /* 扫描线动画 */
         .bg-scan {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(0, 184, 107, 0.3), transparent);
-            opacity: 0.5;
-            animation: scan 8s linear infinite;
+            top: -2px; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 184, 107, 0.4), rgba(0, 224, 255, 0.2), transparent);
+            opacity: 0.6;
+            animation: scan 6s linear infinite;
             pointer-events: none;
             z-index: 1;
         }
@@ -138,12 +138,12 @@
 
         /* 卡片 */
         .card {
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid rgba(0, 184, 107, 0.12);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 184, 107, 0.1);
             border-radius: 14px;
             padding: 10px 12px;
             backdrop-filter: blur(8px);
-            transition: all 0.35s ease;
+            transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
             box-shadow: 0 2px 12px rgba(0,0,0,0.04);
@@ -151,14 +151,37 @@
         .card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; height: 1px;
+            top: 0; left: -100%;
+            width: 100%;
+            height: 2px;
             background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
-            opacity: 0.4;
+            animation: cardGlow 4s ease-in-out infinite;
+        }
+        .card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            animation: cardGlow2 4s ease-in-out infinite;
+        }
+        @keyframes cardGlow {
+            0%, 100% { left: -100%; opacity: 0; }
+            40% { left: 50%; opacity: 0.8; }
+            60% { left: 50%; opacity: 0.8; }
+            100% { left: 200%; opacity: 0; }
+        }
+        @keyframes cardGlow2 {
+            0%, 100% { left: 100%; opacity: 0; }
+            40% { left: -50%; opacity: 0.6; }
+            60% { left: -50%; opacity: 0.6; }
+            100% { left: -200%; opacity: 0; }
         }
         .card:hover {
-            border-color: rgba(0, 230, 135, 0.3);
-            box-shadow: 0 4px 20px rgba(0, 230, 135, 0.08);
-            transform: translateY(-1px);
+            border-color: rgba(0, 184, 107, 0.2);
+            box-shadow: 0 8px 30px rgba(0, 184, 107, 0.06);
+            transform: translateY(-2px);
         }
         .card-title {
             font-size: 10px; color: var(--text-dim);
@@ -167,10 +190,14 @@
         }
         .card-value {
             font-size: 20px; font-weight: 700;
-            color: var(--accent-green);
+            color: #00b86b;
             font-family: 'Consolas', 'Monaco', monospace;
-            text-shadow: 0 0 20px rgba(0, 184, 107, 0.3);
+            text-shadow: 0 0 15px rgba(0, 184, 107, 0.2);
             line-height: 1.2;
+            transition: text-shadow 0.3s;
+        }
+        .card:hover .card-value {
+            text-shadow: 0 0 30px rgba(0, 184, 107, 0.4), 0 0 60px rgba(0, 184, 107, 0.1);
         }
         .card-unit { font-size: 13px; color: var(--text-secondary); margin-left: 4px; }
         .card-trend { font-size: 9px; margin-top: 1px; display: flex; align-items: center; gap: 4px; opacity: 0.6; }
@@ -218,24 +245,41 @@
             flex: 1;
             min-height: 320px;
             position: relative;
-            background: linear-gradient(180deg, rgba(220,228,237,0.3), rgba(210,218,228,0.5));
-            border: 1px solid rgba(0, 184, 107, 0.12);
+            background: linear-gradient(180deg, rgba(220,228,237,0.4), rgba(210,218,228,0.6));
+            border: 1px solid rgba(0, 184, 107, 0.1);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 30px rgba(0,0,0,0.04), 0 0 40px rgba(0, 184, 107, 0.03) inset;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.04), 0 0 60px rgba(0,184,107,0.02) inset;
+            transition: box-shadow 0.5s;
         }
+        .map3d-container::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(0,184,107,0.02), transparent, rgba(0,224,255,0.02), transparent);
+            animation: rotateGlow 15s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes rotateGlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .map3d-container > * { position: relative; z-index: 2; }
         .map3d-title {
             position: absolute;
             top: 8px; left: 50%;
             transform: translateX(-50%);
             font-size: 12px; font-weight: 600;
             z-index: 10;
-            background: rgba(238, 243, 248, 0.75);
+            background: rgba(238, 243, 248, 0.85);
             color: #0f2942;
-            padding: 3px 12px;
+            padding: 3px 14px;
             border-radius: 12px;
-            border: 1px solid rgba(0, 184, 107, 0.15);
+            border: 1px solid rgba(0, 184, 107, 0.12);
             display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 0 20px rgba(0,184,107,0.05);
         }
         .map3d-loading {
             position: absolute;
@@ -275,14 +319,15 @@
 
         .map3d-corner {
             position: absolute;
-            background: rgba(238, 243, 248, 0.6);
+            background: rgba(238, 243, 248, 0.65);
             padding: 5px 10px;
-            border: 1px solid rgba(0, 184, 107, 0.12);
+            border: 1px solid rgba(0, 184, 107, 0.1);
             border-radius: 6px;
             font-size: 11px;
             color: #4a6a8a;
             z-index: 10;
             backdrop-filter: blur(4px);
+            box-shadow: 0 0 15px rgba(0,184,107,0.02);
         }
         .corner-tl { top: 12px; left: 12px; }
         .corner-tr { top: 12px; right: 12px; }
@@ -349,11 +394,15 @@
         }
         .ndvi-main {
             background: linear-gradient(145deg, #ffffff, #f0f5fa);
-            border: 1px solid rgba(0, 184, 107, 0.12);
+            border: 1px solid rgba(0, 184, 107, 0.08);
             border-radius: 14px;
             padding: 20px;
             position: relative;
-            box-shadow: 0 1px 12px rgba(0,0,0,0.03);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.03), 0 0 40px rgba(0,184,107,0.02) inset;
+            transition: box-shadow 0.4s;
+        }
+        .ndvi-main:hover {
+            box-shadow: 0 4px 30px rgba(0,0,0,0.04), 0 0 60px rgba(0,184,107,0.04) inset;
         }
         .ndvi-main h3 { font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         #chart-ndvi { width: 100%; height: 400px; }
@@ -366,16 +415,36 @@
         }
         .ndvi-stat {
             background: linear-gradient(135deg, #ffffff, #f4f8fc);
-            border: 1px solid rgba(0, 184, 107, 0.1);
-            border-radius: 10px;
+            border: 1px solid rgba(0, 184, 107, 0.08);
+            border-radius: 12px;
             padding: 12px;
             text-align: center;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.02);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .ndvi-stat::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,184,107,0.03), transparent);
+            animation: statShine 6s ease-in-out infinite;
+        }
+        @keyframes statShine {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+        .ndvi-stat:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0,184,107,0.04);
         }
         .ndvi-stat-value {
             font-size: 22px; font-weight: 700;
             color: var(--accent-green);
             font-family: 'Consolas', monospace;
+            text-shadow: 0 0 10px rgba(0,184,107,0.15);
         }
         .ndvi-stat-label { color: var(--text-dim); font-size: 12px; }
         .ndvi-stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
@@ -458,6 +527,7 @@
             background: linear-gradient(90deg, #8b6f47, #d4a574, #a8c455, #4a9f3e, #1a7a2e);
             border-radius: 7px;
             transition: width 0.3s ease;
+            box-shadow: 0 0 15px rgba(74,159,62,0.2);
         }
         .timeline-marks {
             position: absolute;
@@ -481,6 +551,12 @@
             gap: 10px;
             margin-bottom: 14px;
         }
+        .sensor-card:nth-child(1) { --sensor-delay: 0s; }
+        .sensor-card:nth-child(2) { --sensor-delay: 0.3s; }
+        .sensor-card:nth-child(3) { --sensor-delay: 0.6s; }
+        .sensor-card:nth-child(4) { --sensor-delay: 0.9s; }
+        .sensor-card:nth-child(5) { --sensor-delay: 1.2s; }
+        .sensor-card:nth-child(6) { --sensor-delay: 1.5s; }
         .sensor-card {
             background: linear-gradient(145deg, #ffffff, #f2f6fb);
             border: 1px solid rgba(0, 184, 107, 0.1);
@@ -511,6 +587,7 @@
             font-family: 'Consolas', monospace;
             color: var(--accent-green);
             line-height: 1.2;
+            text-shadow: 0 0 10px rgba(0,184,107,0.1);
         }
         .sensor-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
         .sensor-unit { font-size: 13px; color: var(--text-secondary); }
@@ -563,8 +640,8 @@
             top: 6px; right: 6px;
             width: 6px; height: 6px;
             border-radius: 50%;
-            background: var(--accent-green);
-            box-shadow: 0 0 6px var(--accent-green);
+            background: #00b86b;
+            box-shadow: 0 0 8px rgba(0,184,107,0.5), 0 0 16px rgba(0,184,107,0.15);
             animation: pulse 2s infinite;
         }
         .station-name { color: var(--text-primary); font-weight: 600; }
@@ -667,7 +744,11 @@
         }
         .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 184, 107, 0.3);
+            box-shadow: 0 8px 30px rgba(0, 184, 107, 0.3);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 184, 107, 0.2);
         }
 
         .report-list {
@@ -752,8 +833,8 @@
         /* 区域 3D 弹窗 */
         .region-modal-box {
             background: #ffffff;
-            border: 1px solid rgba(0, 184, 107, 0.15);
-            box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0, 184, 107, 0.1);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.06), 0 0 60px rgba(0,184,107,0.03);
             border-radius: 16px;
             width: 780px;
             max-width: 90vw;
@@ -1030,7 +1111,7 @@
                         <h3 style="font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">&#128247; 内蒙古草原野生动物活动热力图 <span style="color:var(--accent-green);font-size:13px;font-weight:400;" id="wildlife-current-date">2026-07</span></h3>
                         <div id="chart-wildlife" style="width:100%;height:420px;"></div>
                     </div>
-                                        <div id="week-trend-container" style="margin:8px 0 0 0;padding:10px 14px;background:rgba(255,255,255,0.5);border:1px solid rgba(0,184,107,0.08);border-radius:10px;">
+                                        <div id="week-trend-container" style="margin:8px 0 0 0;padding:10px 14px;background:rgba(255,255,255,0.5);border:1px solid rgba(0,184,107,0.06);border-radius:10px;box-shadow:0 0 15px rgba(0,184,107,0.03);">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                             <span style="font-size:12px;color:var(--text-dim);font-weight:500;">&#128200; 最近 7 天变化趋势</span>
                             <span style="font-size:11px;color:var(--accent-green);font-weight:600;" id="week-trend-label">NDVI 返青率</span>
