@@ -266,8 +266,8 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        .map3d-container > * { position: relative; z-index: 2; }
-        #chart-3d-map { position: relative; z-index: 2; }
+        #chart-3d-map { position: relative; z-index: 1; }
+        #map-overlay { z-index: 5; opacity: 0.9; }
         .map3d-container::after {
             content: '';
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -2068,7 +2068,7 @@ function init3DMap() {
                 // 初始化 minimap
                 setTimeout(function() {
                     initMinimap();
-                setTimeout(initMapOverlay, 600);
+                setTimeout(initMapOverlay, 800);
                 }, 500);
 
                 var has3D = true;
@@ -2981,6 +2981,7 @@ function initNDVI() {
         });
 
         // 预生成几条 alert
+        setTimeout(initMapOverlay, 1000);
         setTimeout(() => { for (let i = 0; i < 4; i++) pushAlert(); }, 500);
     </script>
 </body>
