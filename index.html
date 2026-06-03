@@ -1741,20 +1741,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             }
         }
 
-                                function renderMap3D() {
+        function renderMap3D() {
             if (!chart3d) return;
-
-            function getColor(v) {
-                var colors = [
-                    [90, '#0d5e1a'], [80, '#1a7a2e'], [70, '#3d9e3a'],
-                    [60, '#7ccd3a'], [50, '#a8c455'], [40, '#d4a574'],
-                    [30, '#b8885a'], [20, '#8b6f47'], [0, '#5a3a1f']
-                ];
-                for (var i = 0; i < colors.length; i++) {
-                    if (v >= colors[i][0]) return colors[i][1];
-                }
-                return '#5a3a1f';
-            }
 
             chart3d.setOption({
                 backgroundColor: '#050d1a',
@@ -1771,69 +1759,44 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     data: REGIONS.map(function(r) { return { name: r.name, value: r.cover }; }),
                     boxWidth: 220,
                     boxDepth: 130,
-                    regionHeight: 0.8,
-                    shading: 'color',
-                    groundColor: '#030d10',
+                    regionHeight: 3,
+                    shading: 'lambert',
+                    groundColor: '#020a12',
                     light: {
-                        main: { intensity: 1.5, alpha: 35, beta: 45 },
-                        ambient: { intensity: 1.2 }
+                        main: { intensity: 2.5, shadow: true, alpha: 55, beta: 30 },
+                        ambient: { intensity: 1.0 }
                     },
                     postEffect: { enable: false },
                     viewControl: {
-                        alpha: 30,
-                        beta: 20,
-                        distance: 100,
-                        autoRotate: true,
-                        autoRotateSpeed: 4,
-                        autoRotateAfterStill: 3
+                        alpha: 35, beta: 25, distance: 95,
+                        autoRotate: true, autoRotateSpeed: 4, autoRotateAfterStill: 2
                     },
                     label: {
-                        show: true,
-                        color: '#ffffff',
-                        fontSize: 12,
-                        fontWeight: 'bold',
+                        show: true, color: '#fff', fontSize: 12, fontWeight: 'bold',
                         backgroundColor: 'rgba(5,13,26,0.5)',
-                        borderColor: 'rgba(0,208,132,0.3)',
-                        borderWidth: 0.5,
-                        padding: [3, 8],
-                        borderRadius: 4,
+                        borderColor: 'rgba(0,208,132,0.3)', borderWidth: 0.5,
+                        padding: [3, 8], borderRadius: 4,
                         formatter: function(p) {
                             return (p.name||'').replace('市','').replace('盟','');
                         }
                     },
                     emphasis: {
                         label: {
-                            show: true,
-                            color: '#0aff60',
-                            fontSize: 15,
-                            fontWeight: 'bold',
+                            show: true, color: '#0aff60', fontSize: 15, fontWeight: 'bold',
                             backgroundColor: 'rgba(5,13,26,0.7)',
-                            borderColor: '#0aff60',
-                            borderWidth: 1
+                            borderColor: '#0aff60', borderWidth: 1
                         },
-                        itemStyle: {
-                            color: '#0aff60'
-                        }
+                        itemStyle: { color: '#0aff60' }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.3)',
-                        borderWidth: 0.8
+                        borderColor: 'rgba(0, 224, 255, 0.35)',
+                        borderWidth: 1
                     },
-                    // 地形级高度差异
-                    // 低覆盖（<40%）: 平缓 3~8
-                    // 中覆盖（40-60%）: 缓坡 10~25
-                    // 高覆盖（60-80%）: 隆起 30~60
-                    // 茂盛（>80%）: 高地 70~90
                     regions: REGIONS.map(function(r) {
                         var c = r.cover;
-                        var h;
-                        if (c >= 80) h = 70 + (c - 80) * 2;     // 80-85: 70~80
-                        else if (c >= 60) h = 25 + (c - 60) * 2.25; // 60-80: 25~70
-                        else if (c >= 40) h = 8 + (c - 40) * 0.85;  // 40-60: 8~25
-                        else h = 3 + c * 0.12;                      // <40: 3~8
-                        return { name: r.name, height: h };
-                    }),
-                    // 每帧自动调整视角位置——由 viewControl.autoRotate 处理
+                        var h = (c / 50) * (c / 50) * 32;
+                        return { name: r.name, height: Math.max(3, h) };
+                    })
                 }],
                 tooltip: {
                     trigger: 'item',
@@ -1842,7 +1805,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                         var r = REGIONS.find(function(x) { return x.name === p.name; });
                         return '<b>' + p.name + '</b><br/>' +
                             '覆盖度：<span style="color:#00d084">' + p.data.value.toFixed(1) + '%</span><br/>' +
-                            (r ? '气温：' + r.temp.toFixed(1) + '℃  土壤墒情：' + r.soil + '%' : '');
+                            (r ? '气温：' + r.temp.toFixed(1) + '℃  土壤坹情：' + r.soil + '%' : '');
                     },
                     backgroundColor: 'rgba(5,13,26,0.95)',
                     borderColor: '#00d084',
@@ -1854,12 +1817,13 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
             chart3d.off('click');
             chart3d.on('click', function(p) {
-                var regionName = p.name || (p.data && p.data.name);
-                if (!regionName) return;
-                var r = REGIONS.find(function(x) { return x.name === regionName; });
+                var rn = p.name || (p.data && p.data.name);
+                if (!rn) return;
+                var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
-        }// ============ NDVI 返青监测 ============
+        }
+// ============ NDVI 返青监测 ============
         let chartNDVI = null;
         let chartTrend = null;
         let ndviInited = false;
