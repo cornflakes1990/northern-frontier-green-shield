@@ -676,13 +676,106 @@
             animation: modalIn 0.3s ease;
             box-shadow: 0 20px 60px rgba(0, 208, 132, 0.2);
         }
-        @keyframes modalIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
         .modal-icon { font-size: 56px; margin-bottom: 12px; }
         .modal h3 { font-size: 20px; margin-bottom: 8px; }
         .modal p { color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; font-size: 13px; }
+
+        /* 区域 3D 弹窗 */
+        .region-modal-box {
+            background: var(--secondary-dark);
+            border: 1px solid rgba(0, 208, 132, 0.35);
+            border-radius: 16px;
+            width: 780px;
+            max-width: 90vw;
+            max-height: 85vh;
+            animation: modalIn 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 208, 132, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .region-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 24px;
+            border-bottom: 1px solid rgba(0, 208, 132, 0.15);
+            background: rgba(0,0,0,0.2);
+        }
+        .region-modal-icon { font-size: 32px; }
+        .modal-close-btn {
+            margin-left: auto;
+            background: none;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-secondary);
+            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .modal-close-btn:hover { background: rgba(231,76,60,0.2); border-color: var(--accent-red); color: var(--accent-red); }
+        .region-modal-body {
+            display: flex;
+            gap: 16px;
+            padding: 20px 24px;
+            flex: 1;
+            min-height: 0;
+        }
+        .region-modal-chart {
+            width: 380px;
+            height: 340px;
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .region-modal-metrics {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+        }
+        .region-metric-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .region-metric-icon { font-size: 20px; width: 28px; text-align: center; }
+        .region-metric-label { font-size: 13px; color: var(--text-secondary); width: 100px; flex-shrink: 0; }
+        .region-metric-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .region-metric-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .region-metric-value {
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        @media (max-width: 800px) {
+            .region-modal-box { width: 95vw; }
+            .region-modal-body { flex-direction: column; }
+            .region-modal-chart { width: 100%; height: 220px; }
+        }
         .modal-btn {
             padding: 10px 32px;
             background: linear-gradient(135deg, var(--accent-green), var(--accent-light-green));
@@ -1137,11 +1230,19 @@
     </div>
 
     <div class="modal-overlay" id="region-modal">
-        <div class="modal">
-            <div class="modal-icon">&#128506;</div>
-            <h3 id="region-name">--</h3>
-            <p id="region-info">--</p>
-            <button class="modal-btn" onclick="closeRegionModal()">关闭</button>
+        <div class="region-modal-box">
+            <div class="region-modal-header">
+                <div class="region-modal-icon">&#127807;</div>
+                <div>
+                    <h3 id="region-name" style="font-size:22px;margin:0;">--</h3>
+                    <span id="region-status-badge" style="font-size:12px;padding:2px 10px;border-radius:10px;">--</span>
+                </div>
+                <button class="modal-close-btn" onclick="closeRegionModal()">&times;</button>
+            </div>
+            <div class="region-modal-body">
+                <div class="region-modal-chart" id="region-modal-chart"></div>
+                <div class="region-modal-metrics" id="region-modal-metrics"></div>
+            </div>
         </div>
     </div>
 
@@ -1247,22 +1348,150 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         refreshTicker();
 
         // ============ 弹窗 ============
+        var regionModalChart = null;
+
         function showRegionInfo(name, value, status) {
+            var region = REGIONS.find(function(r) { return r.name === name; });
+            if (!region) return;
+
+            // 设置标题
             document.getElementById('region-name').textContent = name;
-            const statusColor = status === 'healthy' ? 'var(--accent-green)' :
+            var statusColor = status === 'healthy' ? 'var(--accent-green)' :
+                              status === 'warning' ? 'var(--accent-yellow)' : 'var(--accent-red)';
+            var statusText = status === 'healthy' ? '健康' : status === 'warning' ? '警戒' : '退化';
+            var badge = document.getElementById('region-status-badge');
+            badge.textContent = statusText;
+            badge.style.background = status === 'healthy' ? 'rgba(0,208,132,0.2)' :
+                                     status === 'warning' ? 'rgba(240,165,0,0.2)' : 'rgba(231,76,60,0.2)';
+            badge.style.color = status === 'healthy' ? 'var(--accent-green)' :
                                 status === 'warning' ? 'var(--accent-yellow)' : 'var(--accent-red)';
-            const statusText = status === 'healthy' ? '健康' : status === 'warning' ? '警戒' : '退化';
-            const region = REGIONS.find(r => r.name === name);
-            document.getElementById('region-info').innerHTML = `
-                生态状态：<span style="color:${statusColor};font-weight:700">${statusText}</span><br>
-                草原覆盖度：<span style="color:var(--accent-green);font-weight:700">${value.toFixed(1)}%</span><br>
-                ${region ? `当前气温：<span style="color:var(--accent-cyan)">${region.temp}℃</span><br>
-                土壤墒情：<span style="color:var(--accent-cyan)">${region.soil}%</span><br>` : ''}
-                监测时间：${new Date().toLocaleString('zh-CN')}
-            `;
+
+            // 构建指标面板
+            var metrics = [
+                { icon: '\u{1F3D7}', label: '草原覆盖度', value: region.cover + '%', pct: region.cover, color: '#00d084' },
+                { icon: '\u{1F321}', label: '平均气温', value: region.temp + '\u2103', pct: Math.min(100, (region.temp/25)*100), color: '#00e0ff' },
+                { icon: '\u{1F4A7}', label: '空气湿度', value: region.hum + '%', pct: region.hum, color: '#3498db' },
+                { icon: '\u{1F4A8}', label: '风速', value: region.wind + ' m/s', pct: Math.min(100, (region.wind/15)*100), color: '#a8c455' },
+                { icon: '\u{1F331}', label: '土壤墒情', value: region.soil + '%', pct: region.soil, color: '#8b6f47' },
+                { icon: '\u{1F32C}', label: 'PM2.5', value: region.pm + ' \u00b5g/m\u00b3', pct: Math.min(100, (region.pm/100)*100), color: '#e74c3c' },
+            ];
+
+            var metricsHtml = '';
+            for (var i = 0; i < metrics.length; i++) {
+                var m = metrics[i];
+                metricsHtml += '<div class="region-metric-row">' +
+                    '<span class="region-metric-icon">' + m.icon + '</span>' +
+                    '<span class="region-metric-label">' + m.label + '</span>' +
+                    '<div class="region-metric-bar"><div class="region-metric-fill" style="width:' + m.pct + '%;background:' + m.color + ';"></div></div>' +
+                    '<span class="region-metric-value" style="color:' + m.color + '">' + m.value + '</span>' +
+                    '</div>';
+            }
+            document.getElementById('region-modal-metrics').innerHTML = metricsHtml;
+
+            // 显示弹窗
             document.getElementById('region-modal').classList.add('show');
+
+            // 等弹窗渲染完成后初始化 3D 柱状图
+            setTimeout(function() {
+                var chartEl = document.getElementById('region-modal-chart');
+                if (!chartEl || chartEl.offsetWidth === 0) return;
+
+                // 清理旧图表
+                if (regionModalChart) {
+                    regionModalChart.dispose();
+                    regionModalChart = null;
+                }
+
+                regionModalChart = echarts.init(chartEl);
+
+                // 6 个传感器指标：归一化到 0-100 显示
+                var categories = ['气温', '湿度', '风速', '土壤', 'PM2.5', 'CO\u2082'];
+                var values = [
+                    region.temp / 25 * 100,
+                    region.hum,
+                    region.wind / 15 * 100,
+                    region.soil,
+                    region.pm / 100 * 100,
+                    region.co2 / 500 * 100
+                ];
+                var colors = ['#00e0ff', '#3498db', '#a8c455', '#8b6f47', '#e74c3c', '#9b59b6'];
+
+                // 构造 3D 柱体数据
+                var data3d = [];
+                for (var i = 0; i < 6; i++) {
+                    data3d.push({
+                        value: [i, 0, Math.max(1, values[i])],
+                        itemStyle: { color: colors[i] }
+                    });
+                }
+
+                regionModalChart.setOption({
+                    backgroundColor: 'transparent',
+                    grid3D: {
+                        boxWidth: 80,
+                        boxDepth: 20,
+                        boxHeight: 50,
+                        viewControl: {
+                            alpha: 20,
+                            beta: 30,
+                            distance: 100,
+                            autoRotate: true,
+                            autoRotateSpeed: 6,
+                            autoRotateAfterStill: 1
+                        },
+                        light: {
+                            main: { intensity: 2, alpha: 40, beta: 30 },
+                            ambient: { intensity: 0.6 }
+                        },
+                        axisPointer: { show: false }
+                    },
+                    xAxis3D: {
+                        type: 'category',
+                        data: categories,
+                        axisLine: { lineStyle: { color: 'rgba(160,180,200,0.3)' } },
+                        axisLabel: { color: '#a0b4c8', fontSize: 10 }
+                    },
+                    yAxis3D: { type: 'value', show: false },
+                    zAxis3D: {
+                        type: 'value',
+                        max: 100,
+                        axisLine: { lineStyle: { color: 'rgba(160,180,200,0.3)' } },
+                        axisLabel: { color: '#a0b4c8', fontSize: 9 }
+                    },
+                    series: [{
+                        type: 'bar3D',
+                        data: data3d,
+                        shading: 'color',
+                        barSize: 1.2,
+                        minHeight: 0.5,
+                        itemStyle: { opacity: 0.9 },
+                        label: {
+                            show: true,
+                            formatter: function(p) { return p.data.value[2].toFixed(0); },
+                            color: '#fff',
+                            fontSize: 10
+                        }
+                    }]
+                });
+
+                regionModalChart.resize();
+
+                // 点击弹窗外部关闭（在 overlay 上监听）
+                var overlay = document.getElementById('region-modal');
+                overlay.onclick = function(e) {
+                    if (e.target === overlay) closeRegionModal();
+                };
+
+            }, 100);
         }
-        function closeRegionModal() { document.getElementById('region-modal').classList.remove('show'); }
+
+        function closeRegionModal() {
+            document.getElementById('region-modal').classList.remove('show');
+            if (regionModalChart) {
+                regionModalChart.dispose();
+                regionModalChart = null;
+            }
+        }
 
         function closeModal() { document.getElementById('success-modal').classList.remove('show'); }
 
