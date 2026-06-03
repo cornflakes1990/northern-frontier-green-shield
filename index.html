@@ -1438,7 +1438,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     min: 30,
                     max: 90,
                     inRange: {
-                        color: ['#e74c3c', '#f0a500', '#0aff60']
+                        color: ['#8b0000', '#e74c3c', '#f0a500', '#7ccd3a', '#0aff60']
                     }
                 },
                 series: [{
@@ -1448,22 +1448,22 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     data: data,
                     boxWidth: 200,
                     boxDepth: 110,
-                    regionHeight: 4,
+                    regionHeight: 1.5,
                     shading: 'lambert',
                     light: {
                         main: {
-                            intensity: 2,
-                            shadow: false,
-                            alpha: 40,
-                            beta: 30
+                            intensity: 2.5,
+                            shadow: true,
+                            alpha: 50,
+                            beta: 20
                         },
-                        ambient: { intensity: 1 }
+                        ambient: { intensity: 0.8 }
                     },
                     postEffect: { enable: false },
                     viewControl: {
-                        distance: 130,
-                        alpha: 40,
-                        beta: 0,
+                        distance: 110,
+                        alpha: 45,
+                        beta: -10,
                         autoRotate: true,
                         autoRotateSpeed: 4,
                         autoRotateAfterStill: 3
@@ -1493,7 +1493,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     // 高度映射数据值
                     regions: REGIONS.map(r => ({
                         name: r.name,
-                        height: r.cover * 0.18  // 覆盖度越高柱体越高
+                        height: Math.max(0.5, r.cover * 0.35)  // 覆盖度越高柱体越高
                     }))
                 }]
             });
