@@ -5,43 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北疆绿盾 - 内蒙古草原生态实时感知与共治平台</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script>
-    // 检测 echarts-gl（map3D）是否可用
-    function __isMap3DAvailable() {
-        try {
-            var c = echarts.init(document.createElement('div'));
-            c.setOption({ series: [{ type: 'map3D', map: '' }] });
-            c.dispose();
-            return true;
-        } catch(e) { return false; }
-    }
-
-    // 动态加载 echarts-gl，多 CDN 自动降级
-    window.__echartsGLReady = new Promise(function(resolve) {
-        if (__isMap3DAvailable()) { resolve(true); return; }
-
-        // 中国用户优先用 bootcdn（快），再走 jsdelivr / unpkg
-        var urls = [
-            'https://cdn.bootcdn.net/ajax/libs/echarts-gl/2.0.9/echarts-gl.min.js',
-            'https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js',
-            'https://unpkg.com/echarts-gl@2.0.9/dist/echarts-gl.min.js'
-        ];
-        var i = 0;
-        function loadNext() {
-            var s = document.createElement('script');
-            s.src = urls[i++];
-            s.onload = function() {
-                setTimeout(function() { resolve(__isMap3DAvailable()); }, 200);
-            };
-            s.onerror = function() {
-                if (i < urls.length) loadNext();
-                else { resolve(false); }
-            };
-            document.head.appendChild(s);
-        }
-        loadNext();
-    });
-    </script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts-gl/2.0.9/echarts-gl.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js';document.head.appendChild(s);"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1399,15 +1363,17 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             });
         }
 
-        async function init3DMap(hasMap3D) {
+        async function init3DMap() {
             try {
                 echarts.registerMap('innerMongolia', INNER_MONGOLIA_GEOJSON);
                 document.getElementById('map3d-loading').style.display = 'none';
                 chart3d = echarts.init(document.getElementById('chart-3d-map'));
 
-                if (hasMap3D) {
+                // try 3D, fallback to 2D if echarts-gl not loaded
+                try {
                     renderMap3D();
-                } else {
+                } catch (e) {
+                    console.warn('3D fail, fallback to 2D:', e.message);
                     renderMap2DFallback();
                 }
 
@@ -1957,10 +1923,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             }
         }, 15000);
 
-        // 等待 echarts-gl 加载完成后初始化 3D 地图
-        window.__echartsGLReady.then(function(hasMap3D) {
-            init3DMap(hasMap3D);
-        });
+        // 初始化地图（3D 优先，自动降级 2D）
+        init3DMap();
 
         // 预生成几条 alert
         setTimeout(() => { for (let i = 0; i < 4; i++) pushAlert(); }, 500);
