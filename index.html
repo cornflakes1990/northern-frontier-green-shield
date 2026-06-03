@@ -1363,6 +1363,16 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             });
         }
 
+        // 强制 chart 容器有明确的像素尺寸（解决 echarts-gl "Dom has no width or height"）
+        function fixChartSize() {
+            var el = document.getElementById('chart-3d-map');
+            if (el) {
+                el.style.width = el.offsetWidth + 'px';
+                el.style.height = el.offsetHeight + 'px';
+                console.log('[地图] 固定容器尺寸:', el.style.width, el.style.height);
+            }
+        }
+
         function isMap3DAvailable() {
             try {
                 var c = echarts.init(document.createElement('div'));
@@ -1382,11 +1392,9 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 document.getElementById('map3d-loading').style.display = 'none';
                 var chartEl = document.getElementById('chart-3d-map');
                 console.log('[地图] 容器尺寸:', chartEl.offsetWidth, 'x', chartEl.offsetHeight);
-                // 显式传入宽高，避免 echarts-gl 报 "Dom has no width or height"
-                chart3d = echarts.init(chartEl, null, {
-                    width: chartEl.offsetWidth || 800,
-                    height: chartEl.offsetHeight || 600
-                });
+                // 给容器写死像素尺寸，解决 echarts-gl WebGL 内部 0 尺寸检测
+                fixChartSize();
+                chart3d = echarts.init(chartEl);
                 console.log('[地图] ECharts 初始化成功');
 
                 var has3D = isMap3DAvailable();
@@ -1400,7 +1408,11 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     console.log('[地图] 2D 渲染完成');
                 }
 
-                window.addEventListener('resize', function() { chart3d && chart3d.resize(); });
+                window.addEventListener('resize', function() {
+                    var el = document.getElementById('chart-3d-map');
+                    if (el) { el.style.width = ''; el.style.height = ''; } // 恢复百分比
+                    chart3d && chart3d.resize();
+                });
                 setTimeout(function() {
                     console.log('[地图] resize 触发，尺寸:', chart3d ? chart3d.getWidth() + 'x' + chart3d.getHeight() : '无实例');
                     chart3d && chart3d.resize();
