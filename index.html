@@ -973,7 +973,7 @@
                         <div class="map3d-corner corner-tr">
                             <div style="color:var(--accent-green);font-weight:600;">&#9889; 数据源</div>
                             <div>遥感卫星 / 地面台站</div>
-                            <div id="data-source-time">2026-05-08 实时</div>
+                            <div id="data-source-time">2026-06-03 实时</div>
                         </div>
                         <div class="map3d-corner corner-bl map3d-legend">
                             <div class="legend-item"><div class="legend-dot dot-green"></div>健康 &#8805;70%</div>
@@ -1448,8 +1448,15 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         // ============ 实时时钟 ============
         function updateTime() {
-            const now = new Date();
+            var now = new Date();
             document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', { hour12: false });
+            var ds = document.getElementById('data-source-time');
+            if (ds) {
+                var y = now.getFullYear();
+                var m = String(now.getMonth() + 1).padStart(2, '0');
+                var d = String(now.getDate()).padStart(2, '0');
+                ds.textContent = y + '-' + m + '-' + d + ' 实时';
+            }
         }
         setInterval(updateTime, 1000);
         updateTime();
