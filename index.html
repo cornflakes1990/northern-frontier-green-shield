@@ -267,6 +267,17 @@
             to { transform: rotate(360deg); }
         }
         .map3d-container > * { position: relative; z-index: 2; }
+        .map3d-container::after {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 50%, rgba(0,200,100,0.03), transparent 60%);
+            animation: mapBreathe 4s ease-in-out infinite;
+            pointer-events: none; z-index: 1;
+        }
+        @keyframes mapBreathe {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
         .map3d-title {
             position: absolute;
             top: 8px; left: 50%;
@@ -2028,6 +2039,22 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var r = REGIONS.find(function(x) { return x.name === rn; });
                 if (r) showRegionInfo(r.name, r.cover, r.status);
             });
+            // 动态呼吸光效：每隔几秒高亮一个区域
+            if (window.__mpGlow) clearInterval(window.__mpGlow);
+            window.__mpIdx = 0;
+            window.__mpGlow = setInterval(function() {
+                if (!chart3d) { clearInterval(window.__mpGlow); return; }
+                var idx = window.__mpIdx;
+                var regions = REGIONS.map(function(r, i) {
+                    var isHL = i === idx;
+                    var b = isHL ? 1.5 : 0.5;
+                    var c = isHL ? 'rgba(0,255,150,0.6)' : 'rgba(56,217,232,0.15)';
+                    return { name: r.name, itemStyle: { borderColor: c, borderWidth: b } };
+                });
+                try { chart3d.setOption({ series: [{ regions: regions }] }); } catch(e) {}
+                window.__mpIdx = (idx + 1) % REGIONS.length;
+            }, 3000);
+
         }
 
         // ============ NDVI 返青监测 ============
