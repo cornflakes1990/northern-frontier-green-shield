@@ -1472,33 +1472,28 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                     data: data,
                     boxWidth: 200,
                     boxDepth: 120,
-                    regionHeight: 2,
-                    shading: 'realistic',
-                    realisticMaterial: {
-                        roughness: 0.6,
-                        metalness: 0.0
-                    },
-                    groundColor: '#071a0e',
+                    regionHeight: 1,
+                    shading: 'lambert',
+                    groundColor: '#030d06',
                     groundLine: {
                         show: true,
-                        color: 'rgba(0, 208, 132, 0.12)',
+                        color: 'rgba(0, 208, 132, 0.15)',
                         lineWidth: 0.5
                     },
                     light: {
                         main: {
-                            intensity: 2.0,
+                            intensity: 2.5,
                             shadow: true,
-                            shadowQuality: 'high',
-                            alpha: 55,
-                            beta: 25
+                            alpha: 60,
+                            beta: 30
                         },
-                        ambient: { intensity: 0.7 }
+                        ambient: { intensity: 0.8 }
                     },
                     postEffect: { enable: false },
                     viewControl: {
-                        alpha: 40,
-                        beta: 20,
-                        distance: 95,
+                        alpha: 45,
+                        beta: 15,
+                        distance: 85,
                         minAlpha: 10,
                         maxAlpha: 80,
                         autoRotate: true,
@@ -1525,16 +1520,14 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                         itemStyle: { color: '#0aff60' }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.25)',
-                        borderWidth: 0.6
+                        borderColor: 'rgba(0, 224, 255, 0.2)',
+                        borderWidth: 0.5
                     },
                     regions: REGIONS.map(function(r) {
-                        // 地形感高度：覆盖度越高隆起越明显
-                        var h;
-                        if (r.cover >= 70) h = 15 + (r.cover - 70) * 0.8;
-                        else if (r.cover >= 50) h = 8 + (r.cover - 50) * 0.35;
-                        else h = 3 + r.cover * 0.1;
-                        return { name: r.name, height: h };
+                        // 高度 = 覆盖度的平方放大，让低覆盖平坦、高覆盖明显隆起
+                        // 阿拉善 35% → 12, 呼伦贝尔 85% → 72, 6 倍落差！
+                        var h = (r.cover / 100) * (r.cover / 100) * 100;
+                        return { name: r.name, height: Math.max(3, h) };
                     })
                 }]
             });
