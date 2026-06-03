@@ -615,7 +615,7 @@
             box-shadow: 0 1px 6px rgba(0,0,0,0.02);
         }
         .sensor-chart-card h4 { font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .sensor-chart { width: 100%; height: 160px; }
+        .sensor-chart { width: 100%; }
 
         .sensors-bottom {
             display: grid;
@@ -1231,69 +1231,70 @@
                 <p>覆盖全区 86 个地面监测站，每 3 秒回传一次数据</p>
             </div>
 
-            <!-- 6 个核心传感器 -->
-            <div class="sensors-stats">
-                <div class="sensor-card">
-                    <div class="sensor-icon">&#127777;</div>
-                    <div class="sensor-value pulse-num" id="sensor-temp">12.5<span class="sensor-unit">&#8451;</span></div>
-                    <div class="sensor-label">实时气温</div>
-                </div>
-                <div class="sensor-card">
-                    <div class="sensor-icon">&#128167;</div>
-                    <div class="sensor-value pulse-num" id="sensor-hum">42<span class="sensor-unit">%</span></div>
-                    <div class="sensor-label">空气湿度</div>
-                </div>
-                <div class="sensor-card">
-                    <div class="sensor-icon">&#128168;</div>
-                    <div class="sensor-value pulse-num" id="sensor-wind">8.2<span class="sensor-unit">m/s</span></div>
-                    <div class="sensor-label">瞬时风速</div>
-                </div>
-                <div class="sensor-card">
-                    <div class="sensor-icon">&#127807;</div>
-                    <div class="sensor-value pulse-num" id="sensor-soil">52<span class="sensor-unit">%</span></div>
-                    <div class="sensor-label">土壤墒情</div>
-                </div>
-                <div class="sensor-card">
-                    <div class="sensor-icon">&#127787;</div>
-                    <div class="sensor-value pulse-num" id="sensor-pm">48<span class="sensor-unit">μg/m³</span></div>
-                    <div class="sensor-label">PM2.5</div>
-                </div>
-                <div class="sensor-card">
-                    <div class="sensor-icon">&#127794;</div>
-                    <div class="sensor-value pulse-num" id="sensor-co2">425<span class="sensor-unit">ppm</span></div>
-                    <div class="sensor-label">CO₂ 浓度</div>
-                </div>
-            </div>
-
-            <!-- 中部 3 个图表 -->
-            <div class="sensors-mid">
-                <div class="sensor-chart-card">
-                    <h4>&#128201; 24 小时气温变化曲线</h4>
-                    <div id="chart-temp24" class="sensor-chart"></div>
-                </div>
-                <div class="sensor-chart-card">
-                    <h4>&#127780; 风速·风向雷达</h4>
-                    <div id="chart-wind" class="sensor-chart"></div>
-                </div>
-                <div class="sensor-chart-card">
-                    <h4>&#127807; 土壤墒情趋势</h4>
-                    <div id="chart-soil" class="sensor-chart"></div>
-                </div>
-            </div>
-
-            <!-- 下部：站点矩阵 + 报警流 -->
-            <div class="sensors-bottom">
-                <div class="stations-grid">
-                    <h4>&#128225; 12 盟市监测站实时状态 <span style="color:var(--text-dim);font-size:11px;font-weight:400;margin-left:auto;">所有站点 在线</span></h4>
-                    <div class="station-list" id="station-list">
-                        <!-- JS 动态生成 -->
+            <div style="display:flex;flex-direction:column;gap:10px;height:calc(100vh - 120px);">
+                <!-- 6 个核心传感器（顶部紧凑行） -->
+                <div class="sensors-stats" style="flex-shrink:0;margin-bottom:0;">
+                    <div class="sensor-card">
+                        <div class="sensor-icon">&#127777;</div>
+                        <div class="sensor-value pulse-num" id="sensor-temp">12.5<span class="sensor-unit">&#8451;</span></div>
+                        <div class="sensor-label">实时气温</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-icon">&#128167;</div>
+                        <div class="sensor-value pulse-num" id="sensor-hum">42<span class="sensor-unit">%</span></div>
+                        <div class="sensor-label">空气湿度</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-icon">&#128168;</div>
+                        <div class="sensor-value pulse-num" id="sensor-wind">8.2<span class="sensor-unit">m/s</span></div>
+                        <div class="sensor-label">瞬时风速</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-icon">&#127807;</div>
+                        <div class="sensor-value pulse-num" id="sensor-soil">52<span class="sensor-unit">%</span></div>
+                        <div class="sensor-label">土壤墒情</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-icon">&#127787;</div>
+                        <div class="sensor-value pulse-num" id="sensor-pm">48<span class="sensor-unit">μg/m³</span></div>
+                        <div class="sensor-label">PM2.5</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="sensor-icon">&#127794;</div>
+                        <div class="sensor-value pulse-num" id="sensor-co2">425<span class="sensor-unit">ppm</span></div>
+                        <div class="sensor-label">CO₂ 浓度</div>
                     </div>
                 </div>
 
-                <div class="alert-feed">
-                    <h4>&#128226; 实时数据流 / 报警 <span style="color:var(--text-dim);font-size:11px;font-weight:400;margin-left:auto;" id="alert-count">0 条</span></h4>
-                    <div id="alert-list">
-                        <!-- JS 动态生成 -->
+                <!-- 中部：图表（中间占比大） -->
+                <div class="sensors-mid" style="flex:1;min-height:0;margin-bottom:0;">
+                    <div class="sensor-chart-card" style="display:flex;flex-direction:column;">
+                        <h4>&#128201; 24 小时气温变化曲线</h4>
+                        <div id="chart-temp24" style="flex:1;width:100%;min-height:0;"></div>
+                    </div>
+                    <div class="sensor-chart-card" style="display:flex;flex-direction:column;">
+                        <h4>&#127780; 风速·风向雷达</h4>
+                        <div id="chart-wind" style="flex:1;width:100%;min-height:0;"></div>
+                    </div>
+                    <div class="sensor-chart-card" style="display:flex;flex-direction:column;">
+                        <h4>&#127807; 土壤墒情趋势</h4>
+                        <div id="chart-soil" style="flex:1;width:100%;min-height:0;"></div>
+                    </div>
+                </div>
+
+                <!-- 下部：站点矩阵 + 报警流（固定高度） -->
+                <div class="sensors-bottom" style="flex-shrink:0;">
+                    <div class="stations-grid">
+                        <h4>&#128225; 12 盟市监测站实时状态 <span style="color:var(--text-dim);font-size:11px;font-weight:400;margin-left:auto;">所有站点 在线</span></h4>
+                        <div class="station-list" id="station-list">
+                            <!-- JS 动态生成 -->
+                        </div>
+                    </div>
+                    <div class="alert-feed">
+                        <h4>&#128226; 实时数据流 / 报警 <span style="color:var(--text-dim);font-size:11px;font-weight:400;margin-left:auto;" id="alert-count">0 条</span></h4>
+                        <div id="alert-list">
+                            <!-- JS 动态生成 -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1518,8 +1519,6 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
         // ============ 通用工具 ============
         function showPage(pageId, navEl) {
-            if (animId) { cancelAnimationFrame(animId); animId = null; }
-            if (pageId === "dashboard") { ; }
             document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
