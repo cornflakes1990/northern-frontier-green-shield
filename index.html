@@ -944,6 +944,7 @@
                         <div class="map3d-corner corner-br">
                             <span style="color:var(--text-dim);font-size:10px;">左键旋转 · 右键平移 · 滚轮缩放</span>
                         </div>
+                        <div id="map-minimap" style="position:absolute;bottom:12px;right:12px;width:200px;height:140px;background:rgba(10,26,46,0.7);border:1px solid rgba(0,230,135,0.15);border-radius:8px;z-index:20;cursor:grab;overflow:hidden;"></div>
                         <div class="map3d-loading" id="map3d-loading">
                             <span class="loading-spinner"></span>正在加载内蒙古地理数据 ...
                         </div>
@@ -1810,6 +1811,11 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 console.log('[地图] ECharts 初始化成功');
                 chartEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
+                // 初始化 minimap
+                setTimeout(function() {
+                    initMinimap();
+                }, 500);
+
                 var has3D = true;
 				renderMap3D();
 				console.log("[地图] 3D 渲染完成");
@@ -2547,7 +2553,67 @@ function initNDVI() {
         setInterval(updateRealtimeData, 3000);
 
         
-        // ============ 启动 ============
+        
+        // ============ 缩略图导航 ============
+        var minimapChart = null;
+        function initMinimap() {
+            var el = document.getElementById('map-minimap');
+            if (!el || el.offsetWidth === 0) return;
+            minimapChart = echarts.init(el);
+
+            // minimap 显示内蒙古全貌，只支持平移缩放
+            minimapChart.setOption({
+                backgroundColor: 'transparent',
+                geo: {
+                    map: 'innerMongolia',
+                    roam: true,
+                    zoom: 0.85,
+                    center: [113, 46],
+                    label: { show: false },
+                    itemStyle: {
+                        areaColor: 'rgba(0,200,100,0.08)',
+                        borderColor: 'rgba(0,230,135,0.3)',
+                        borderWidth: 0.5
+                    },
+                    emphasis: {
+                        itemStyle: { areaColor: 'rgba(0,200,100,0.15)' }
+                    }
+                },
+                series: [{
+                    type: 'map',
+                    geoIndex: 0,
+                    data: REGIONS.map(function(r) { return { name: r.name, value: r.cover }; })
+                }]
+            });
+
+            // 当 minimap 被拖拽/缩放时，同步到主 3D 地图
+            minimapChart.on('georoam', function() {
+                // 获取 minimap 当前中心点和缩放
+                var option = minimapChart.getOption();
+                var geo = option.geo[0];
+                var center = geo.center || [113, 46];
+                var zoom = geo.zoom || 1;
+
+                // 同步到主地图 viewControl
+                // 使用 distance 来模拟 zoom：zoom 越大 distance 越小
+                if (chart3d) {
+                    var newDistance = Math.max(40, Math.min(200, 120 / zoom));
+                    chart3d.setOption({
+                        series: [{
+                            viewControl: {
+                                distance: newDistance,
+                                beta: (center[0] - 113) * 0.5,
+                                alpha: 30 - (center[1] - 46) * 0.5
+                            }
+                        }]
+                    });
+                }
+            });
+
+            minimapChart.resize();
+        }
+
+// ============ 启动 ============
 
         // 加载超时看门狗（15秒后如果加载提示还在，显示诊断信息）
         setTimeout(function() {
