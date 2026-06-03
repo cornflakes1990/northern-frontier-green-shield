@@ -1910,7 +1910,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             document.getElementById('tl-hint').textContent = mode === 'ndvi' ? '拖动时间轴查看全年植被变化' : '拖动时间轴查看动物活动变化';
 
             document.getElementById('chart-ndvi').parentNode.style.display = mode === 'ndvi' ? 'block' : 'none';
-            
+            document.getElementById('wildlife-chart-container').style.display = mode === 'wildlife' ? 'block' : 'none';
+            document.getElementById('ndvi-chart-title').style.display = mode === 'ndvi' ? 'block' : 'none';
             document.getElementById('ndvi-stats').style.display = mode === 'ndvi' ? 'block' : 'none';
             document.getElementById('wildlife-stats').style.display = mode === 'wildlife' ? 'block' : 'none';
 
