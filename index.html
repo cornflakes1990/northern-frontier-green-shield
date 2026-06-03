@@ -2028,6 +2028,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
             var dateStr = '2026 年 ' + monthNames[timelineMonth - 1];
             document.getElementById('wildlife-current-date').textContent = '2026-' + (timelineMonth < 10 ? '0' : '') + timelineMonth;
+            document.getElementById('timeline-date').textContent = dateStr;
+            document.getElementById('timeline-progress').style.width = (timelineMonth / 12 * 100) + '%';
 
             var avg = 0;
             for (var i = 0; i < data.length; i++) avg += data[i].value;
