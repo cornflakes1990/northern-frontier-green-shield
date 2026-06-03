@@ -1910,7 +1910,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             document.getElementById('tl-hint').textContent = mode === 'ndvi' ? '拖动时间轴查看全年植被变化' : '拖动时间轴查看动物活动变化';
 
             document.getElementById('chart-ndvi').parentNode.style.display = mode === 'ndvi' ? 'block' : 'none';
-            document.getElementById('wildlife-chart-container').style.display = mode === 'wildlife' ? 'block' : 'none';
+            
             document.getElementById('ndvi-stats').style.display = mode === 'ndvi' ? 'block' : 'none';
             document.getElementById('wildlife-stats').style.display = mode === 'wildlife' ? 'block' : 'none';
 
@@ -1987,42 +1987,47 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
             if (!chartWildlife) return;
             chartWildlife.setOption({
-                backgroundColor: 'transparent',
-                tooltip: {
-                    trigger: 'item',
-                    formatter: function(p) {
-                        if (!p.data) return p.name;
-                        var level = p.data.value > 0.7 ? '高活跃' : p.data.value > 0.4 ? '中等活跃' : '低活跃';
-                        return '<b>' + p.name + '</b><br/>' +
-                            '动物活动指数：<span style="color:#00b86b;font-weight:bold">' + p.data.value.toFixed(3) + '</span><br/>' +
-                            '活动等级：' + level + '<br/>监测月份：' + dateStr;
-                    },
-                    backgroundColor: 'rgba(10,26,46,0.92)',
-                    borderColor: '#00b86b',
-                    textStyle: { color: '#e8edf5' }
-                },
-                visualMap: {
-                    show: false, min: 0, max: 1.0,
-                    inRange: { color: ['#5a3a1f','#8b6f47','#c9a96e','#a8c455','#4a9f3e','#1a7a2e','#0d5e1a'] }
-                },
-                series: [{
-                    type: 'map',
-                    map: 'innerMongolia',
-                    data: data,
-                    label: {
-                        show: true, color: '#e8edf5', fontSize: 10,
-                        formatter: function(p) { return (p.name||'').replace('市','').replace('盟',''); }
-                    },
-                    itemStyle: {
-                        borderColor: 'rgba(56, 217, 232, 0.2)', borderWidth: 0.5
-                    },
-                    emphasis: {
-                        label: { color: '#22ff70', fontSize: 13 },
-                        itemStyle: { areaColor: '#22ff70' }
-                    }
-                }]
-            });
-            chartWildlife.resize();
+                                backgroundColor: 'transparent',
+                                tooltip: {
+                                    trigger: 'item',
+                                    formatter: function(p) {
+                                        if (!p.data) return p.name;
+                                        var level = p.data.value > 0.7 ? '高活跃' : p.data.value > 0.4 ? '中等活跃' : '低活跃';
+                                        return '<b>' + p.name + '</b><br/>' +
+                                            '动物活动指数：<span style="color:#00b86b;">' + p.data.value.toFixed(3) + '</span><br/>' +
+                                            '活动等级：' + level + '<br/>监测月份：' + dateStr;
+                                    },
+                                    backgroundColor: 'rgba(10,26,46,0.92)',
+                                    borderColor: '#00b86b',
+                                    textStyle: { color: '#e8edf5' }
+                                },
+                                visualMap: {
+                                    show: false, min: 0, max: 1.0,
+                                    inRange: { color: ['#5a3a1f','#8b6f47','#c9a96e','#a8c455','#4a9f3e','#1a7a2e','#0d5e1a'] }
+                                },
+                                geo: {
+                                    map: 'innerMongolia',
+                                    roam: true,
+                                    zoom: 1.1,
+                                    label: {
+                                        show: true, color: '#e8edf5', fontSize: 10,
+                                        formatter: function(p) { return (p.name||'').replace(/市|盟/g,''); }
+                                    },
+                                    itemStyle: {
+                                        borderColor: 'rgba(56, 217, 232, 0.2)', borderWidth: 0.5,
+                                        areaColor: '#eef3f8'
+                                    },
+                                    emphasis: {
+                                        label: { color: '#22ff70', fontSize: 13 },
+                                        itemStyle: { areaColor: '#22ff70' }
+                                    }
+                                },
+                                series: [{
+                                    type: 'map',
+                                    geoIndex: 0,
+                                    data: data
+                                }]
+                            });chartWildlife.resize();chartWildlife.resize();
         }
 
         function renderSpecies() {
