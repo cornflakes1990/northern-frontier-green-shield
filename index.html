@@ -232,6 +232,7 @@
             vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
         #chart-3d-map { width: 100%; height: 100%; }
 
         .map3d-corner {
@@ -1627,7 +1628,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                         if (!p.data) return p.name;
                         const r = REGIONS.find(x => x.name === p.name);
                         return `<b>${p.name}</b><br/>
-                                覆盖度：<span style="color:#00d084">${p.data.value.toFixed(1)}%</span><br/>
+                                覆盖度：<span style='color:#00d084'>${p.data.value.toFixed(1)}%</span><br/>
                                 气温：${r ? r.temp.toFixed(1) + '℃' : '-'}<br/>
                                 土壤墒情：${r ? r.soil + '%' : '-'}`;
                     },
@@ -1679,31 +1680,11 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         }
 
         // 强制 chart 容器有明确的像素尺寸（解决 echarts-gl "Dom has no width or height"）
-        function fixChartSize() {
-            var el = document.getElementById('chart-3d-map');
-            if (el) {
-                el.style.width = el.offsetWidth + 'px';
-                el.style.height = el.offsetHeight + 'px';
-                console.log('[地图] 固定容器尺寸:', el.style.width, el.style.height);
-            }
-        }
+        
 
-        function isMap3DAvailable() {
-            try {
-                var d = document.createElement('div');
-                d.style.width = '100px';
-                d.style.height = '100px';
-                document.body.appendChild(d);
-                var c = echarts.init(d);
-                c.setOption({ series: [{ type: 'map3D', map: '' }] });
-                var ret = true;
-                c.dispose();
-                d.remove();
-                return ret;
-            } catch(e) { return false; }
-        }
+        
 
-        async function init3DMap() {
+        function init3DMap() {
             console.log('[地图] init3DMap 开始');
             try {
                 console.log('[地图] 注册地图数据...');
@@ -1714,7 +1695,6 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
                 var chartEl = document.getElementById('chart-3d-map');
                 console.log('[地图] 容器尺寸:', chartEl.offsetWidth, 'x', chartEl.offsetHeight);
                 // 给容器写死像素尺寸，解决 echarts-gl WebGL 内部 0 尺寸检测
-                fixChartSize();
                 chart3d = echarts.init(chartEl);
                 console.log('[地图] ECharts 初始化成功');
 
@@ -1744,84 +1724,67 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         function renderMap3D() {
             if (!chart3d) return;
 
-            var data = REGIONS.map(function(r) {
-                return { name: r.name, value: r.cover };
-            });
-
             chart3d.setOption({
-                backgroundColor: '#050d1a',
+                backgroundColor: "#050d1a",
                 visualMap: {
-                    show: false,
-                    min: 20, max: 90,
-                    inRange: {
-                        color: ['#5a3a1f', '#7a5430', '#b8885a', '#d4a574', '#a8c455', '#7ccd3a', '#4a9f3e', '#1a7a2e', '#0d5e1a']
-                    }
+                    show: false, min: 20, max: 90,
+                    inRange: { color: ["#5a3a1f","#7a5430","#b8885a","#d4a574","#a8c455","#7ccd3a","#4a9f3e","#1a7a2e","#0d5e1a"] }
+                },
+                tooltip: {
+                    trigger: "item",
+                    formatter: function(p) {
+                        if (!p.data) return p.name;
+                        var r = REGIONS.find(function(x) { return x.name === p.name; });
+                        var h = "<b>" + p.name + "</b><br/>";
+                        h += "覆盖度：<span style=\"color:#00d084\">" + p.data.value.toFixed(1) + "%</span><br/>";
+                        if (r) h += "气温：" + r.temp.toFixed(1) + "℃ 土壤墒情：" + r.soil + "%";
+                        return h;
+                    },
+                    backgroundColor: "rgba(5,13,26,0.95)",
+                    borderColor: "#00d084",
+                    textStyle: { color: "#fff" }
                 },
                 series: [{
-                    type: 'map3D',
-                    map: 'innerMongolia',
-                    data: data,
+                    type: "map3D",
+                    map: "innerMongolia",
+                    data: REGIONS.map(function(r) { return { name: r.name, value: r.cover }; }),
                     boxWidth: 240,
                     boxDepth: 140,
-                    regionHeight: 1,
-                    shading: 'color',
-                    groundColor: '#030d10',
-                    groundLine: {
-                        show: true,
-                        color: 'rgba(0, 208, 132, 0.08)',
-                        lineWidth: 0.3
+                    regionHeight: 2,
+                    shading: "lambert",
+                    groundColor: "#020a12",
+                    light: {
+                        main: { intensity: 1.0, shadow: false, alpha: 45, beta: 30 },
+                        ambient: { intensity: 2.0 }
                     },
+                    postEffect: { enable: false },
                     viewControl: {
-                        alpha: 28,
-                        beta: 18,
-                        distance: 100,
-                        autoRotate: true,
-                        autoRotateSpeed: 4,
-                        autoRotateAfterStill: 3
+                        alpha: 30, beta: 20, distance: 100,
+                        autoRotate: true, autoRotateSpeed: 4, autoRotateAfterStill: 3
                     },
                     label: {
-                        show: true,
-                        color: '#ffffff',
-                        fontSize: 12,
-                        fontWeight: 'bold',
-                        backgroundColor: 'rgba(5,13,26,0.55)',
-                        borderColor: 'rgba(0,208,132,0.3)',
-                        borderWidth: 0.5,
-                        padding: [3, 8],
-                        borderRadius: 4,
-                        formatter: function(p) {
-                            return (p.name||'').replace('市','').replace('盟','');
-                        }
+                        show: true, color: "#fff", fontSize: 12, fontWeight: "bold",
+                        backgroundColor: "rgba(5,13,26,0.5)",
+                        padding: [3, 8], borderRadius: 4,
+                        formatter: function(p) { return (p.name||"").replace(/市|盟/g,""); }
                     },
                     emphasis: {
-                        label: {
-                            show: true,
-                            color: '#0aff60',
-                            fontSize: 14,
-                            fontWeight: 'bold',
-                            backgroundColor: 'rgba(5,13,26,0.7)',
-                            borderColor: '#0aff60',
-                            borderWidth: 1
-                        },
-                        itemStyle: { color: '#0aff60' }
+                        label: { show: true, color: "#0aff60", fontSize: 14 },
+                        itemStyle: { color: "#0aff60" }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(0, 224, 255, 0.25)',
-                        borderWidth: 0.6
+                        borderColor: "rgba(0, 224, 255, 0.3)",
+                        borderWidth: 0.8
                     },
                     regions: REGIONS.map(function(r) {
                         var c = r.cover;
-                        // 平方放大：阿拉善 35%→12, 呼伦贝尔 85%→72
-                        var h = (c / 50) * (c / 50) * 25;
-                        return { name: r.name, height: Math.max(3, h) };
+                        return { name: r.name, height: (c/50)*(c/50)*30 };
                     })
                 }]
             });
-
             chart3d.resize();
-
-            chart3d.off('click');
-            chart3d.on('click', function(p) {
+            chart3d.off("click");
+            chart3d.on("click", function(p) {
                 var rn = p.name || (p.data && p.data.name);
                 if (!rn) return;
                 var r = REGIONS.find(function(x) { return x.name === rn; });
