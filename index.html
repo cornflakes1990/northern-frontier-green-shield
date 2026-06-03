@@ -1391,7 +1391,7 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             // 显示弹窗
             document.getElementById('region-modal').classList.add('show');
 
-            // 等弹窗渲染完成后初始化 3D 柱状图
+                        // 等弹窗渲染完成后初始化该区域 3D 地形图
             setTimeout(function() {
                 var chartEl = document.getElementById('region-modal-chart');
                 if (!chartEl || chartEl.offsetWidth === 0) return;
@@ -1404,86 +1404,172 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
 
                 regionModalChart = echarts.init(chartEl);
 
-                // 6 个传感器指标：归一化到 0-100 显示
-                var categories = ['气温', '湿度', '风速', '土壤', 'PM2.5', 'CO\u2082'];
-                var values = [
-                    region.temp / 25 * 100,
-                    region.hum,
-                    region.wind / 15 * 100,
-                    region.soil,
-                    region.pm / 100 * 100,
-                    region.co2 / 500 * 100
-                ];
-                var colors = ['#00e0ff', '#3498db', '#a8c455', '#8b6f47', '#e74c3c', '#9b59b6'];
-
-                // 构造 3D 柱体数据
-                var data3d = [];
-                for (var i = 0; i < 6; i++) {
-                    data3d.push({
-                        value: [i, 0, Math.max(1, values[i])],
-                        itemStyle: { color: colors[i] }
-                    });
+                // 从 GeoJSON 中提取该区域的特征
+                var regionFeature = null;
+                var features = INNER_MONGOLIA_GEOJSON.features;
+                for (var fi = 0; fi < features.length; fi++) {
+                    if (features[fi].properties.name === name) {
+                        regionFeature = features[fi];
+                        break;
+                    }
                 }
 
-                regionModalChart.setOption({
-                    backgroundColor: 'transparent',
-                    grid3D: {
-                        boxWidth: 80,
-                        boxDepth: 20,
-                        boxHeight: 50,
-                        viewControl: {
-                            alpha: 20,
-                            beta: 30,
-                            distance: 100,
-                            autoRotate: true,
-                            autoRotateSpeed: 6,
-                            autoRotateAfterStill: 1
-                        },
-                        light: {
-                            main: { intensity: 2, alpha: 40, beta: 30 },
-                            ambient: { intensity: 0.6 }
-                        },
-                        axisPointer: { show: false }
-                    },
-                    xAxis3D: {
-                        type: 'category',
-                        data: categories,
-                        axisLine: { lineStyle: { color: 'rgba(160,180,200,0.3)' } },
-                        axisLabel: { color: '#a0b4c8', fontSize: 10 }
-                    },
-                    yAxis3D: { type: 'value', show: false },
-                    zAxis3D: {
-                        type: 'value',
-                        max: 100,
-                        axisLine: { lineStyle: { color: 'rgba(160,180,200,0.3)' } },
-                        axisLabel: { color: '#a0b4c8', fontSize: 9 }
-                    },
-                    series: [{
-                        type: 'bar3D',
-                        data: data3d,
-                        shading: 'color',
-                        barSize: 1.2,
-                        minHeight: 0.5,
-                        itemStyle: { opacity: 0.9 },
-                        label: {
-                            show: true,
-                            formatter: function(p) { return p.data.value[2].toFixed(0); },
-                            color: '#fff',
-                            fontSize: 10
+                if (!regionFeature) { regionModalChart = null; return; }
+
+                // 点在线内检测（射线法）
+                function pointInPoly(lng, lat, ring) {
+                    var inside = false;
+                    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                        if ((ring[i][1] > lat) !== (ring[j][1] > lat) &&
+                            lng < (ring[j][0] - ring[i][0]) * (lat - ring[i][1]) / (ring[j][1] - ring[i][1]) + ring[i][0]) {
+                            inside = !inside;
                         }
-                    }]
-                });
+                    }
+                    return inside;
+                }
 
-                regionModalChart.resize();
+                // 获取外边界
+                var outerRing = regionFeature.geometry.coordinates[0][0];
 
-                // 点击弹窗外部关闭（在 overlay 上监听）
+                // 计算边界框
+                var minLng=180, maxLng=-180, minLat=90, maxLat=-90;
+                for (var ri = 0; ri < outerRing.length; ri++) {
+                    if (outerRing[ri][0] < minLng) minLng = outerRing[ri][0];
+                    if (outerRing[ri][0] > maxLng) maxLng = outerRing[ri][0];
+                    if (outerRing[ri][1] < minLat) minLat = outerRing[ri][1];
+                    if (outerRing[ri][1] > maxLat) maxLat = outerRing[ri][1];
+                }
+
+                // NDVI 色带
+                function getTerrainColor(v) {
+                    if (v >= 80) return '#1a7a2e';
+                    if (v >= 65) return '#4a9f3e';
+                    if (v >= 50) return '#a8c455';
+                    if (v >= 40) return '#d4a574';
+                    if (v >= 30) return '#b8885a';
+                    return '#8b6f47';
+                }
+
+                // 生成地形点阵 — 用 scatter3D + geo3D 展现地形起伏
+                var terrainPoints = [];
+                var step = 0.05; // 网格间距
+                var cover = region.cover;
+                var baseColor = getTerrainColor(cover);
+                var seed = name.length + cover; // 确定性种子
+
+                for (var x = minLng; x <= maxLng; x += step) {
+                    for (var y = minLat; y <= maxLat; y += step) {
+                        if (!pointInPoly(x, y, outerRing)) continue;
+
+                        // 地形噪声：多频率正弦波叠加
+                        var noise = Math.sin(x * 3.0) * Math.cos(y * 2.5) * 4 +
+                                    Math.sin(x * 5.0 + y * 4.0 + seed) * 2 +
+                                    Math.cos(x * 1.5 - y * 2.0) * 1.5;
+                        var baseH = (cover / 100) * (cover / 100) * 30;
+                        var z = Math.max(0.3, baseH + noise);
+
+                        terrainPoints.push({
+                            value: [x, y, z],
+                            itemStyle: { color: baseColor }
+                        });
+                    }
+                }
+
+                console.log('[弹窗] ' + name + ' 地形点数:', terrainPoints.length);
+
+                if (terrainPoints.length === 0) { regionModalChart = null; return; }
+
+                try {
+                    // 注册该区域为独立地图
+                    var regionMapKey = 'rm_' + name.replace(/[\u5e02\u76df\u7eaa\u8054]/g,'').substring(0,4);
+                    echarts.registerMap(regionMapKey, {
+                        type: 'FeatureCollection',
+                        features: [regionFeature]
+                    });
+
+                    regionModalChart.setOption({
+                        backgroundColor: '#0a1628',
+                        geo3D: {
+                            map: regionMapKey,
+                            shading: 'color',
+                            boxWidth: 100,
+                            boxDepth: 60,
+                            groundColor: '#020a10',
+                            itemStyle: {
+                                color: '#0a1418',
+                                borderColor: 'rgba(0, 224, 255, 0.2)',
+                                borderWidth: 0.3
+                            },
+                            label: { show: false },
+                            emphasis: { itemStyle: { color: '#0a2840' } },
+                            viewControl: {
+                                alpha: 30, beta: 20, distance: 60,
+                                autoRotate: true, autoRotateSpeed: 5,
+                                autoRotateAfterStill: 1
+                            },
+                            light: {
+                                main: { intensity: 1.5, alpha: 40, beta: 30 },
+                                ambient: { intensity: 1 }
+                            },
+                            postEffect: { enable: false }
+                        },
+                        series: [{
+                            type: 'bar3D',
+                            coordinateSystem: 'geo3D',
+                            data: terrainPoints,
+                            shading: 'color',
+                            barSize: 0.04,
+                            minHeight: 0.1,
+                            itemStyle: { opacity: 0.9 }
+                        }]
+                    });
+
+                    regionModalChart.resize();
+                    console.log('[弹窗] 3D 地形渲染成功');
+                } catch(e) {
+                    // 降级：geo3D/bar3D 不可用时显示 map3D
+                    console.warn('[弹窗] 3D 地形降级:', e.message);
+                    try {
+                        regionModalChart.setOption({
+                            backgroundColor: '#0a1628',
+                            visualMap: {
+                                show: false,
+                                min: 20, max: 90,
+                                inRange: { color: ['#5a3a1f','#8b6f47','#c9a96e','#a8c455','#4a9f3e','#1a7a2e'] }
+                            },
+                            series: [{
+                                type: 'map3D',
+                                map: regionMapKey,
+                                shading: 'color',
+                                boxWidth: 80, boxDepth: 50,
+                                regionHeight: 1,
+                                groundColor: '#020a10',
+                                viewControl: {
+                                    alpha: 25, beta: 20, distance: 60,
+                                    autoRotate: true, autoRotateSpeed: 5
+                                },
+                                label: { show: false },
+                                emphasis: { label: { show: true, color: '#0aff60' } },
+                                itemStyle: {
+                                    borderColor: 'rgba(0,224,255,0.3)',
+                                    borderWidth: 0.5
+                                }
+                            }]
+                        });
+                        regionModalChart.resize();
+                        console.log('[弹窗] map3D 降级渲染成功');
+                    } catch(e2) {
+                        console.warn('[弹窗] 降级也失败:', e2.message);
+                    }
+                }
+
+                // 点击外部关闭
                 var overlay = document.getElementById('region-modal');
                 overlay.onclick = function(e) {
                     if (e.target === overlay) closeRegionModal();
                 };
 
-            }, 100);
-        }
+            }, 100);       }
 
         function closeRegionModal() {
             document.getElementById('region-modal').classList.remove('show');
