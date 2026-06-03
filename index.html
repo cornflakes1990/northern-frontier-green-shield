@@ -1932,10 +1932,12 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         
 
         
-        // ============ 粒子/流光叠加层 ============
+        
+        // ============ 流光溢彩 Canvas 叠加层 ============
         var mapCtx = null;
-        var particles = [];
-        var flowDots = [];
+        var glitterPts = [];
+        var ribbons = [];
+        var sparkles = [];
         var animId = null;
 
         function initMapOverlay() {
@@ -1947,26 +1949,31 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             mapCtx = c.getContext('2d');
             if (!mapCtx) return;
 
-            // 漂浮粒子
-            particles = [];
-            for (var i = 0; i < 60; i++) {
-                particles.push({
+            var colors = ['#00ff88','#00ddff','#ff66cc','#ffaa00','#66ff66','#88ddff','#ff8844','#aa66ff'];
+
+            glitterPts = [];
+            for (var i = 0; i < 100; i++) {
+                glitterPts.push({
                     x: Math.random() * c.width, y: Math.random() * c.height,
-                    vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-                    r: Math.random() * 2 + 0.3, a: Math.random() * 0.4 + 0.1,
-                    phase: Math.random() * 6.28
+                    vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
+                    r: Math.random() * 3 + 1, a: Math.random() * 0.6 + 0.4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    phase: Math.random() * 6.28, ps: 1 + Math.random() * 2
                 });
             }
 
-            // 流动光点
-            flowDots = [];
-            for (var i = 0; i < 15; i++) {
-                flowDots.push({
-                    x: Math.random() * c.width, y: Math.random() * c.height,
-                    tx: Math.random() * c.width, ty: Math.random() * c.height,
-                    p: Math.random(), speed: 0.002 + Math.random() * 0.006,
-                    a: Math.random() * 0.3 + 0.1
-                });
+            ribbons = [];
+            for (var i = 0; i < 10; i++) {
+                var pts = [];
+                for (var j = 0; j < 6; j++) {
+                    pts.push({ x: Math.random() * c.width, y: Math.random() * c.height, vx: (Math.random()-0.5)*0.2, vy: (Math.random()-0.5)*0.2 });
+                }
+                ribbons.push({ pts: pts, color: colors[i % colors.length], a: Math.random()*0.25+0.1, w: Math.random()*2+0.5 });
+            }
+
+            sparkles = [];
+            for (var i = 0; i < 40; i++) {
+                sparkles.push({ x: Math.random()*c.width, y: Math.random()*c.height, r: Math.random()*2+0.5, phase: Math.random()*6.28, color: colors[Math.floor(Math.random()*colors.length)] });
             }
 
             if (animId) cancelAnimationFrame(animId);
@@ -1980,64 +1987,88 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             ctx.clearRect(0, 0, c.width, c.height);
             var t = Date.now() / 1000;
 
-            // 流动光点
-            for (var i = 0; i < flowDots.length; i++) {
-                var d = flowDots[i];
-                d.p += d.speed;
-                if (d.p > 1) { d.p = 0; d.x = d.tx; d.tx = Math.random() * c.width; d.ty = Math.random() * c.height; }
-                var x = d.x + (d.tx - d.x) * d.p;
-                var y = d.y + (d.ty - d.y) * d.p;
-                var a = Math.sin(d.p * 3.14) * d.a;
-                // 光点
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, 6.28);
-                ctx.fillStyle = 'rgba(0,210,120,' + a + ')';
-                ctx.fill();
-                // 光晕
-                var g = ctx.createRadialGradient(x, y, 0, x, y, 6);
-                g.addColorStop(0, 'rgba(0,210,120,' + a * 0.3 + ')');
-                g.addColorStop(1, 'rgba(0,210,120,0)');
-                ctx.fillStyle = g;
-                ctx.fillRect(x-6, y-6, 12, 12);
-                // 轨迹尾部
-                for (var j = 1; j <= 8; j++) {
-                    var tp = Math.max(0, d.p - j * 0.02);
-                    var tx = d.x + (d.tx - d.x) * tp;
-                    var ty = d.y + (d.ty - d.y) * tp;
-                    var ta = (1 - j/8) * d.a * 0.3;
-                    ctx.beginPath();
-                    ctx.arc(tx, ty, 1, 0, 6.28);
-                    ctx.fillStyle = 'rgba(0,180,100,' + ta + ')';
-                    ctx.fill();
+            // 彩色飘带
+            for (var i = 0; i < ribbons.length; i++) {
+                var rib = ribbons[i];
+                for (var j = 0; j < rib.pts.length; j++) {
+                    var p = rib.pts[j]; p.x += p.vx; p.y += p.vy;
+                    if (p.x < -20) p.x = c.width+20; if (p.x > c.width+20) p.x = -20;
+                    if (p.y < -20) p.y = c.height+20; if (p.y > c.height+20) p.y = -20;
                 }
+                ctx.beginPath();
+                ctx.moveTo(rib.pts[0].x, rib.pts[0].y);
+                for (var j = 1; j < rib.pts.length-1; j++) {
+                    ctx.quadraticCurveTo(rib.pts[j].x, rib.pts[j].y, (rib.pts[j].x+rib.pts[j+1].x)/2, (rib.pts[j].y+rib.pts[j+1].y)/2);
+                }
+                ctx.strokeStyle = rib.color;
+                ctx.globalAlpha = rib.a + Math.sin(t*0.5+i)*0.08;
+                ctx.lineWidth = rib.w;
+                ctx.shadowColor = rib.color;
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
             }
 
-            // 粒子
-            for (var i = 0; i < particles.length; i++) {
-                var p = particles[i];
+            // 流光粒子 + 光晕
+            for (var i = 0; i < glitterPts.length; i++) {
+                var p = glitterPts[i];
                 p.x += p.vx; p.y += p.vy;
                 if (p.x < 0) p.x = c.width; if (p.x > c.width) p.x = 0;
                 if (p.y < 0) p.y = c.height; if (p.y > c.height) p.y = 0;
-                var pulse = Math.sin(t * 1.5 + p.phase) * 0.3 + 0.7;
+                var pulse = Math.sin(t * p.ps + p.phase) * 0.4 + 0.6;
+                var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 8);
+                grad.addColorStop(0, p.color + '99');
+                grad.addColorStop(0.4, p.color + '33');
+                grad.addColorStop(1, p.color + '00');
+                ctx.fillStyle = grad;
+                ctx.fillRect(p.x-p.r*8, p.y-p.r*8, p.r*16, p.r*16);
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, 6.28);
-                ctx.fillStyle = 'rgba(0,220,140,' + p.a * pulse + ')';
+                ctx.arc(p.x, p.y, p.r * pulse, 0, 6.28);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.a * pulse;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 15;
                 ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
             }
 
-            // 脉冲波
-            var waveT = t * 0.3 % 1;
-            for (var w = 0; w < 2; w++) {
-                var wt = (waveT + w * 0.5) % 1;
-                var wcx = c.width * (0.2 + wt * 0.6);
-                var wcy = c.height * 0.4;
-                var wr = 15 + wt * 40;
-                var wa = Math.sin(wt * 3.14) * 0.4;
+            // 闪烁十字星
+            for (var i = 0; i < sparkles.length; i++) {
+                var s = sparkles[i];
+                var f = Math.sin(t*3+s.phase)*0.5+0.5;
                 ctx.beginPath();
-                ctx.arc(wcx, wcy, wr, 0, 6.28);
-                ctx.strokeStyle = 'rgba(0,200,120,' + wa + ')';
+                ctx.moveTo(s.x-s.r*2*f, s.y); ctx.lineTo(s.x, s.y-s.r*2*f);
+                ctx.lineTo(s.x+s.r*2*f, s.y); ctx.lineTo(s.x, s.y+s.r*2*f);
+                ctx.closePath();
+                ctx.fillStyle = s.color;
+                ctx.globalAlpha = f*0.8;
+                ctx.shadowColor = s.color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+
+            // 周期性光弧
+            var arcT = (t*0.12) % 1;
+            var arcColors = ['#ff66cc','#00ddff','#ffaa00'];
+            for (var i = 0; i < 3; i++) {
+                var at2 = (arcT + i*0.33) % 1;
+                var ax2 = c.width * at2;
+                var ay2 = c.height*(0.2+Math.sin(at2*6.28+i)*0.2);
+                var aa2 = Math.sin(at2*3.14)*0.3;
+                ctx.beginPath();
+                ctx.arc(ax2, ay2, 25+at2*30, 0, 6.28);
+                ctx.strokeStyle = arcColors[i];
+                ctx.globalAlpha = aa2;
                 ctx.lineWidth = 1.5;
+                ctx.shadowColor = arcColors[i];
+                ctx.shadowBlur = 20;
                 ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
             }
 
             animId = requestAnimationFrame(animFrame);
@@ -2049,7 +2080,6 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
             if (c && box) { c.width = box.offsetWidth; c.height = box.offsetHeight; }
         }
         window.addEventListener('resize', resizeMapOverlay);
-
 function init3DMap() {
             console.log('[地图] init3DMap 开始');
             try {
