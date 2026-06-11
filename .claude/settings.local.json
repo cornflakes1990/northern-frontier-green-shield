@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat\\(v2\\): 按老师反馈四大改造 *)",
+      "Bash(git push *)"
+    ]
+  }
+}

@@ -352,6 +352,126 @@
         .dot-red { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
         .dot-blue { background: var(--accent-blue); }
 
+        .research-zone {
+            position: absolute;
+            z-index: 18;
+            width: 150px;
+            height: 92px;
+            border: 1px solid rgba(0,184,107,0.45);
+            border-radius: 50%;
+            transform: rotate(-16deg) skewX(-8deg);
+            background: radial-gradient(ellipse at center, rgba(0,184,107,0.16), rgba(0,184,107,0.03) 58%, transparent 68%);
+            box-shadow: 0 0 22px rgba(0,184,107,0.22), inset 0 0 24px rgba(0,184,107,0.12);
+            pointer-events: none;
+            animation: zonePulse 3.8s ease-in-out infinite;
+        }
+        .research-zone::after {
+            content: attr(data-label);
+            position: absolute;
+            left: 18px;
+            top: -18px;
+            transform: skewX(8deg) rotate(16deg);
+            color: #0f2942;
+            background: rgba(255,255,255,0.82);
+            border: 1px solid rgba(0,184,107,0.18);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .zone-east { right: 18%; top: 29%; }
+        .zone-west { left: 19%; top: 58%; width: 170px; height: 104px; animation-delay: 1.2s; }
+        @keyframes zonePulse {
+            0%, 100% { opacity: 0.62; transform: rotate(-16deg) skewX(-8deg) scale(0.98); }
+            50% { opacity: 1; transform: rotate(-16deg) skewX(-8deg) scale(1.04); }
+        }
+
+        .live-camera-panel {
+            position: absolute;
+            right: 12px;
+            bottom: 78px;
+            width: 310px;
+            z-index: 25;
+            background: rgba(255,255,255,0.84);
+            border: 1px solid rgba(0,184,107,0.18);
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 10px 35px rgba(15,41,66,0.12);
+            backdrop-filter: blur(12px);
+        }
+        .camera-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+        .fake-video {
+            position: relative;
+            height: 168px;
+            border-radius: 8px;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(20,40,56,0.1), rgba(12,24,30,0.46)),
+                url("https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=800&q=80") center/cover;
+        }
+        .fake-video::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, rgba(255,255,255,0.08), rgba(255,255,255,0.08) 1px, transparent 1px, transparent 5px);
+            mix-blend-mode: soft-light;
+            animation: videoScan 2.6s linear infinite;
+        }
+        .fake-video::after {
+            content: '';
+            position: absolute;
+            width: 48px;
+            height: 22px;
+            left: 44%;
+            top: 57%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.62);
+            box-shadow: 28px -12px 0 rgba(255,255,255,0.42), 58px 2px 0 rgba(255,255,255,0.36);
+            filter: blur(2px);
+            animation: videoMove 7s ease-in-out infinite;
+        }
+        @keyframes videoScan { to { transform: translateY(12px); } }
+        @keyframes videoMove {
+            0%, 100% { transform: translateX(-18px); opacity: 0.35; }
+            50% { transform: translateX(24px); opacity: 0.72; }
+        }
+        .camera-osd {
+            position: absolute;
+            left: 9px;
+            right: 9px;
+            bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            color: #fff;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 10px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.45);
+            z-index: 2;
+        }
+        .camera-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .camera-chip {
+            border: 1px solid rgba(0,184,107,0.14);
+            border-radius: 6px;
+            padding: 5px 4px;
+            background: rgba(255,255,255,0.65);
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
         .ticker-bar {
             height: 34px;
             background: rgba(238, 243, 248, 0.6);
@@ -477,6 +597,46 @@
         }
         .ndvi-info h4 { font-size: 13px; color: var(--accent-green); margin-bottom: 6px; }
         .ndvi-info p { font-size: 12px; line-height: 1.6; color: var(--text-secondary); }
+
+        .eco-photo-layer {
+            position: absolute;
+            inset: 60px 20px 88px 20px;
+            pointer-events: none;
+            z-index: 8;
+        }
+        .eco-photo-pin {
+            position: absolute;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.92);
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 8px 20px rgba(15,41,66,0.18), 0 0 0 1px rgba(0,184,107,0.22);
+            animation: photoFloat 4.5s ease-in-out infinite;
+        }
+        .eco-photo-pin::after {
+            content: attr(data-name);
+            position: absolute;
+            left: 50%;
+            bottom: -24px;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(0,184,107,0.15);
+            border-radius: 6px;
+            color: #0f2942;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            white-space: nowrap;
+        }
+        .eco-photo-pin.animal { border-color: rgba(212,165,116,0.96); }
+        .eco-photo-pin.plant { border-color: rgba(34,217,122,0.96); }
+        .eco-photo-pin.animal { display: none; }
+        @keyframes photoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
 
         .timeline-bar {
             margin-top: 12px;
@@ -691,6 +851,131 @@
         .alert-level.info { background: rgba(52, 152, 219, 0.2); color: var(--accent-blue); }
         .alert-level.danger { background: rgba(231, 76, 60, 0.2); color: var(--accent-red); }
         .alert-text { flex: 1; color: var(--text-secondary); line-height: 1.5; }
+
+        .telemetry-row {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr 1fr 1.2fr;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .telemetry-card {
+            background: linear-gradient(145deg, #ffffff, #f2f6fb);
+            border: 1px solid rgba(0,184,107,0.1);
+            border-radius: 12px;
+            padding: 12px 14px;
+            min-height: 78px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.03);
+        }
+        .telemetry-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+        .telemetry-value { font-size: 21px; font-weight: 800; color: var(--accent-green); font-family: Consolas, Monaco, monospace; }
+        .telemetry-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        .signal-bars {
+            display: flex;
+            align-items: end;
+            gap: 3px;
+            height: 28px;
+            margin-top: 8px;
+        }
+        .signal-bars span {
+            flex: 1;
+            border-radius: 3px 3px 0 0;
+            background: linear-gradient(180deg, #22d97a, #00b86b);
+            animation: signalRise 1.8s ease-in-out infinite;
+        }
+        .signal-bars span:nth-child(2) { animation-delay: .15s; }
+        .signal-bars span:nth-child(3) { animation-delay: .3s; }
+        .signal-bars span:nth-child(4) { animation-delay: .45s; }
+        .signal-bars span:nth-child(5) { animation-delay: .6s; }
+        @keyframes signalRise {
+            0%, 100% { height: 35%; opacity: .55; }
+            50% { height: 100%; opacity: 1; }
+        }
+
+        /* ========== 全链路 ========== */
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: 1.05fr 1fr;
+            gap: 14px;
+            max-width: 1280px;
+            margin: 12px auto 0;
+        }
+        .workflow-panel {
+            background: linear-gradient(145deg, #ffffff, #f2f6fb);
+            border: 1px solid rgba(0,184,107,0.1);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 2px 18px rgba(0,0,0,0.04);
+        }
+        .workflow-map {
+            height: 430px;
+            border-radius: 10px;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.35), rgba(238,243,248,0.2)),
+                url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80") center/cover;
+            position: relative;
+            overflow: hidden;
+        }
+        .workflow-alert {
+            position: absolute;
+            width: 190px;
+            left: 48%;
+            top: 45%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(229,85,66,0.25);
+            box-shadow: 0 10px 28px rgba(229,85,66,0.16);
+        }
+        .workflow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .workflow-step {
+            display: grid;
+            grid-template-columns: 38px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.72);
+            border: 1px solid rgba(0,184,107,0.1);
+        }
+        .step-no {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        }
+        .workflow-step h4 { font-size: 13px; margin-bottom: 3px; }
+        .workflow-step p { font-size: 11px; color: var(--text-secondary); line-height: 1.45; }
+        .step-state {
+            font-size: 11px;
+            color: var(--accent-green);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .department-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .dept-card {
+            border-radius: 8px;
+            padding: 10px;
+            background: rgba(255,255,255,0.74);
+            border: 1px solid rgba(0,184,107,0.1);
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .dept-card strong { display: block; color: var(--text-primary); font-size: 12px; margin-bottom: 4px; }
 
         /* ========== 公众共治 ========== */
         .governance-grid {
@@ -956,6 +1241,7 @@
         @media (max-width: 1400px) {
             .sensors-stats { grid-template-columns: repeat(3, 1fr); }
             .sensors-mid { grid-template-columns: 1fr; }
+            .telemetry-row { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 1600px) {
             section { padding: 10px 12px; }
@@ -976,6 +1262,8 @@
             section { padding: 10px 12px; }
             .sensors-stats { grid-template-columns: repeat(2, 1fr); }
             .station-list { grid-template-columns: repeat(2, 1fr); }
+            .telemetry-row, .workflow-grid, .department-board { grid-template-columns: 1fr; }
+            .live-camera-panel { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 8px; }
             nav .nav-links a { padding: 5px 10px; font-size: 12px; }
             nav { padding: 0 10px; }
             #chart-ndvi { height: 280px; }
@@ -1000,6 +1288,7 @@
             <a class="active" onclick="showPage('dashboard', this)">&#127758; 生态全景</a>
             <a onclick="showPage('monitoring', this)">&#127793; 生态监测</a>
             <a onclick="showPage('sensors', this)">&#128225; 环境传感</a>
+            <a onclick="showPage('workflow', this)">&#128260; 处置链路</a>
             <a onclick="showPage('governance', this)">&#128226; 公众共治</a>
         </div>
         <div class="nav-meta">
@@ -1083,6 +1372,25 @@
                         <div class="map3d-corner corner-bl" style="padding:3px 8px;bottom:42px;">
                             <span style="color:var(--text-dim);font-size:9px;">左键旋转 · 右键平移 · 滚轮缩放</span>
                         </div>
+                        <div class="research-zone zone-east" data-label="锡林郭勒草畜平衡研究区"></div>
+                        <div class="research-zone zone-west" data-label="阿拉善荒漠化干预样区"></div>
+                        <div class="live-camera-panel">
+                            <div class="camera-head">
+                                <strong style="color:#0f2942;">&#128249; 实时监控画面</strong>
+                                <span><span class="live-dot" style="display:inline-block;vertical-align:middle;"></span> CAM-07 锡林郭勒</span>
+                            </div>
+                            <div class="fake-video">
+                                <div class="camera-osd">
+                                    <span id="camera-clock">--:--:--</span>
+                                    <span>草原核心区 · 自动巡航</span>
+                                </div>
+                            </div>
+                            <div class="camera-list">
+                                <div class="camera-chip">呼伦贝尔 1</div>
+                                <div class="camera-chip">锡林郭勒 7</div>
+                                <div class="camera-chip">阿拉善 3</div>
+                            </div>
+                        </div>
                         <div id="map-minimap"></div>
                         <div class="map3d-loading" id="map3d-loading">
                             <span class="loading-spinner"></span>正在加载内蒙古地理数据 ...
@@ -1120,6 +1428,12 @@
                     <div id="wildlife-chart-container" style="display:none;">
                         <h3 style="font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">&#128247; 内蒙古草原野生动物活动热力图 <span style="color:var(--accent-green);font-size:13px;font-weight:400;" id="wildlife-current-date">2026-07</span></h3>
                         <div id="chart-wildlife" style="width:100%;height:420px;"></div>
+                    </div>
+                    <div class="eco-photo-layer" id="eco-photo-layer">
+                        <div class="eco-photo-pin plant" data-name="羊草样方" style="left:62%;top:42%;background-image:url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=240&q=80');"></div>
+                        <div class="eco-photo-pin plant" data-name="针茅草甸" style="left:73%;top:21%;background-image:url('https://images.unsplash.com/photo-1464207687429-7505649dae38?auto=format&fit=crop&w=240&q=80');animation-delay:.8s;"></div>
+                        <div class="eco-photo-pin animal" data-name="黄羊活动" style="left:49%;top:50%;background-image:url('https://images.unsplash.com/photo-1484406566174-9da000fda645?auto=format&fit=crop&w=240&q=80');animation-delay:1.4s;"></div>
+                        <div class="eco-photo-pin animal" data-name="候鸟湿地" style="left:36%;top:62%;background-image:url('https://images.unsplash.com/photo-1452570053594-1b985d6ea890?auto=format&fit=crop&w=240&q=80');animation-delay:2s;"></div>
                     </div>
                                         <div id="week-trend-container" style="margin:8px 0 0 0;padding:10px 14px;background:rgba(255,255,255,0.5);border:1px solid rgba(0,184,107,0.06);border-radius:10px;box-shadow:0 0 15px rgba(0,184,107,0.03);">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -1232,6 +1546,28 @@
             </div>
 
             <div style="display:flex;flex-direction:column;gap:10px;height:calc(100vh - 120px);">
+                <div class="telemetry-row">
+                    <div class="telemetry-card">
+                        <div class="telemetry-label">&#128246; 数据入湖速率</div>
+                        <div class="telemetry-value pulse-num" id="telemetry-rate">12,480</div>
+                        <div class="telemetry-sub">条/分钟 · 卫星、台站、相机融合</div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="telemetry-label">&#9888; 异常识别队列</div>
+                        <div class="telemetry-value pulse-num" id="telemetry-threats">17</div>
+                        <div class="telemetry-sub">过牧 6 · 火点 2 · 沙化 9</div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="telemetry-label">&#128640; 模型推理延迟</div>
+                        <div class="telemetry-value pulse-num" id="telemetry-latency">86ms</div>
+                        <div class="telemetry-sub">NDVI 分割 / 目标检测 / 风险评分</div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="telemetry-label">&#128202; 链路吞吐波形</div>
+                        <div class="signal-bars"><span></span><span></span><span></span><span></span><span></span></div>
+                        <div class="telemetry-sub" id="telemetry-sync">12 个盟市已完成本轮同步</div>
+                    </div>
+                </div>
                 <!-- 6 个核心传感器（顶部紧凑行） -->
                 <div class="sensors-stats" style="flex-shrink:0;margin-bottom:0;">
                     <div class="sensor-card">
@@ -1294,6 +1630,66 @@
                         <h4>&#128226; 实时数据流 / 报警 <span style="color:var(--text-dim);font-size:11px;font-weight:400;margin-left:auto;" id="alert-count">0 条</span></h4>
                         <div id="alert-list">
                             <!-- JS 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== 全链路处置展示 ========== -->
+        <section id="workflow">
+            <div class="page-header">
+                <h1>&#128260; 生态风险发现到治理闭环</h1>
+                <p>从实时数据、AI 识别、部门协同到现场措施的全链路演示</p>
+            </div>
+
+            <div class="workflow-grid">
+                <div class="workflow-panel">
+                    <h3 style="font-size:16px;margin-bottom:12px;">&#128269; 威胁发现视图</h3>
+                    <div class="workflow-map">
+                        <div class="workflow-alert">
+                            <div style="color:var(--accent-red);font-weight:800;font-size:13px;">疑似过牧 + 土壤墒情下降</div>
+                            <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:5px;">
+                                锡林郭勒盟西乌旗样区<br>
+                                NDVI 7日下降 8.4% · 风速偏高
+                            </div>
+                            <div style="margin-top:8px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent-red),var(--accent-yellow));"></div>
+                        </div>
+                    </div>
+                    <div class="department-board">
+                        <div class="dept-card"><strong>林草部门</strong>草畜平衡核验、禁牧围栏</div>
+                        <div class="dept-card"><strong>气象部门</strong>风沙预警、人工增雨窗口</div>
+                        <div class="dept-card"><strong>属地网格</strong>现场巡查、群众反馈回传</div>
+                    </div>
+                </div>
+
+                <div class="workflow-panel">
+                    <h3 style="font-size:16px;margin-bottom:12px;">&#128221; 闭环流转记录</h3>
+                    <div class="workflow-steps">
+                        <div class="workflow-step">
+                            <div class="step-no">1</div>
+                            <div><h4>看数据</h4><p>卫星 NDVI、86 个地面站和红外相机实时入湖，形成区域生态健康评分。</p></div>
+                            <div class="step-state">实时中</div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-no">2</div>
+                            <div><h4>发现威胁</h4><p>模型识别到植被指数异常下滑，并与过牧轨迹、土壤墒情数据交叉验证。</p></div>
+                            <div class="step-state" style="color:var(--accent-red);">已预警</div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-no">3</div>
+                            <div><h4>提交反馈</h4><p>系统自动生成工单，推送至林草、气象、属地网格和公众共治平台。</p></div>
+                            <div class="step-state">已派发</div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-no">4</div>
+                            <div><h4>实施措施</h4><p>启动临时禁牧、补播修复、沙障维护和相机复核，现场结果回传平台。</p></div>
+                            <div class="step-state">执行中</div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-no">5</div>
+                            <div><h4>复盘评估</h4><p>7 天后对比 NDVI 与土壤墒情恢复率，沉淀为下次治理策略。</p></div>
+                            <div class="step-state">待复核</div>
                         </div>
                     </div>
                 </div>
@@ -1445,8 +1841,6 @@
             </div>
         </section>
 
-section>
-
     </main>
 
     <!-- 弹窗 -->
@@ -1557,6 +1951,8 @@ var INNER_MONGOLIA_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fe
         function updateTime() {
             var now = new Date();
             document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', { hour12: false });
+            var cameraClock = document.getElementById('camera-clock');
+            if (cameraClock) cameraClock.textContent = now.toLocaleTimeString('zh-CN', { hour12: false }) + ' LIVE';
             var ds = document.getElementById('data-source-time');
             if (ds) {
                 var y = now.getFullYear();
@@ -1983,7 +2379,7 @@ function init3DMap() {
                         fontWeight: 'bold'
                     },
                     inRange: {
-                        color: ['#3a1510', '#6a2a1a', '#a86840', '#c9a96e', '#a8c455', '#7ccd3a', '#4a9f3e', '#1a8a2e', '#0a6e1a', '#045a10']
+                        color: ['#5d3326', '#8b5f38', '#c79a58', '#d8c06f', '#a8c455', '#68b85a', '#2e9f56', '#16844a', '#0f6c3b', '#074f2e']
                     },
                     itemWidth: 14,
                     itemHeight: 130,
@@ -2010,17 +2406,17 @@ function init3DMap() {
                     type: 'map3D',
                     map: 'innerMongolia',
                     data: REGIONS.map(function(r) { return { name: r.name, value: r.cover }; }),
-                    boxWidth: 240,
-                    boxDepth: 140,
-                    regionHeight: 2.5,
+                    boxWidth: 292,
+                    boxDepth: 168,
+                    regionHeight: 1.45,
                     shading: 'color',
-                    groundColor: '#071218',
+                    groundColor: '#dfe8ee',
                     viewControl: {
-                        alpha: 30, beta: 18, distance: 95,
+                        alpha: 34, beta: 12, distance: 82,
                         autoRotate: true, autoRotateSpeed: 3.5,
                         autoRotateAfterStill: 3,
-                        minAlpha: 5, maxAlpha: 80,
-                        minDistance: 40, maxDistance: 200,
+                        minAlpha: 8, maxAlpha: 76,
+                        minDistance: 48, maxDistance: 185,
                         animationDurationUpdate: 300,
                         animationEasingUpdate: 'cubicOut'
                     },
@@ -2053,18 +2449,33 @@ function init3DMap() {
                         }
                     },
                     itemStyle: {
-                        borderColor: 'rgba(0,200,255,0.12)',
-                        borderWidth: 0.4
+                        borderColor: 'rgba(255,255,255,0.48)',
+                        borderWidth: 0.55
                     },
                     regions: REGIONS.map(function(r) {
                         var c = r.cover;
                         var h;
-                        if (c >= 80) h = 80 + (c - 80) * 1.5;
-                        else if (c >= 60) h = 30 + (c - 60) * 2.5;
-                        else if (c >= 45) h = 14 + (c - 45) * 1.07;
-                        else if (c >= 30) h = 6 + (c - 30) * 0.53;
-                        else h = 3 + c * 0.1;
-                        return { name: r.name, height: h };
+                        if (c >= 80) h = 52 + (c - 80) * 1.1;
+                        else if (c >= 60) h = 26 + (c - 60) * 1.2;
+                        else if (c >= 45) h = 14 + (c - 45) * 0.75;
+                        else if (c >= 30) h = 7 + (c - 30) * 0.45;
+                        else h = 4 + c * 0.08;
+                        var isResearch = r.name === '锡林郭勒盟' || r.name === '阿拉善盟';
+                        var isThreat = r.status === 'danger';
+                        return {
+                            name: r.name,
+                            height: h,
+                            itemStyle: isResearch ? {
+                                borderColor: 'rgba(0,255,136,0.86)',
+                                borderWidth: 1.4,
+                                opacity: 0.96
+                            } : isThreat ? {
+                                borderColor: 'rgba(229,85,66,0.62)',
+                                borderWidth: 1.05
+                            } : {
+                                opacity: 0.92
+                            }
+                        };
                     })
                 }]
             });
@@ -2105,6 +2516,11 @@ function init3DMap() {
             if (el) el.style.display = mode === 'ndvi' ? 'block' : 'none';
             el = document.getElementById('wildlife-stats');
             if (el) el.style.display = mode === 'wildlife' ? 'block' : 'none';
+            el = document.getElementById('eco-photo-layer');
+            if (el) {
+                el.querySelectorAll('.plant').forEach(function(pin) { pin.style.display = mode === 'ndvi' ? 'block' : 'none'; });
+                el.querySelectorAll('.animal').forEach(function(pin) { pin.style.display = mode === 'wildlife' ? 'block' : 'none'; });
+            }
 
             setTimeout(renderWeekChart, 50);
             if (mode === 'wildlife') {
@@ -2773,6 +3189,27 @@ function initNDVI() {
                 flashElement(el);
             }
 
+            const telemetryRate = document.getElementById('telemetry-rate');
+            if (telemetryRate) {
+                telemetryRate.textContent = Math.round(rand(11800, 13950)).toLocaleString('zh-CN');
+                flashElement(telemetryRate);
+            }
+            const telemetryThreats = document.getElementById('telemetry-threats');
+            if (telemetryThreats) {
+                telemetryThreats.textContent = Math.round(rand(11, 24));
+                flashElement(telemetryThreats);
+            }
+            const telemetryLatency = document.getElementById('telemetry-latency');
+            if (telemetryLatency) {
+                telemetryLatency.textContent = Math.round(rand(62, 118)) + 'ms';
+                flashElement(telemetryLatency);
+            }
+            const syncEl = document.getElementById('telemetry-sync');
+            if (syncEl) {
+                const phases = ['卫星影像切片完成', '相机目标检测完成', '地面站本轮同步完成', '风险工单自动生成'];
+                syncEl.textContent = phases[Math.floor(Math.random() * phases.length)];
+            }
+
             // 微调站点数据
             REGIONS.forEach((r, i) => {
                 const newTemp = r.temp + rand(-0.5, 0.5);
@@ -2786,6 +3223,9 @@ function initNDVI() {
             // 推送一条 alert（仅在 sensors 页面活跃时）
             if (document.getElementById('sensors').classList.contains('active') && Math.random() < 0.6) {
                 pushAlert();
+                renderTemp24();
+                renderWind();
+                renderSoil();
             }
 
             lastUpdateMs = Date.now();
